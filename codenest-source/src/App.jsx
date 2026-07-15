@@ -21,6 +21,9 @@ import DetailPage from "./DetailPage";
 
 const PASSWORD_HASH = "3090ad7f5b83a40b050aad6e04d2f663049aca5cf0253e1b2ff592fcfed3ef9c";
 const navItems = ["PROJECTS", "BLOG", "ABOUT", "RESUME"];
+const CONTENT_DB_NAME = "codenest-editor";
+const CONTENT_STORE_NAME = "content";
+const CONTENT_RECORD_KEY = "current";
 
 function mergeContent(value = {}) {
   const mergeItems = (defaults, incoming = []) =>
@@ -73,6 +76,61 @@ function containsLocalImage(value) {
   if (Array.isArray(value)) return value.some(containsLocalImage);
   if (value && typeof value === "object") return Object.values(value).some(containsLocalImage);
   return false;
+}
+
+function openContentDatabase() {
+  return new Promise((resolve, reject) => {
+    if (!("indexedDB" in window)) {
+      reject(new Error("Persistent image storage is unavailable."));
+      return;
+    }
+
+    const request = window.indexedDB.open(CONTENT_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(CONTENT_STORE_NAME)) {
+        request.result.createObjectStore(CONTENT_STORE_NAME);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error("Unable to open persistent storage."));
+    request.onblocked = () => reject(new Error("Persistent storage is blocked by another tab."));
+  });
+}
+
+function requestResult(request) {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error("Persistent storage request failed."));
+  });
+}
+
+async function useContentStore(mode, operation) {
+  const database = await openContentDatabase();
+  try {
+    const transaction = database.transaction(CONTENT_STORE_NAME, mode);
+    const completion = new Promise((resolve, reject) => {
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error("Persistent storage transaction failed."));
+      transaction.onabort = () => reject(transaction.error || new Error("Persistent storage transaction was cancelled."));
+    });
+    const result = await requestResult(operation(transaction.objectStore(CONTENT_STORE_NAME)));
+    await completion;
+    return result;
+  } finally {
+    database.close();
+  }
+}
+
+function readPersistentContent() {
+  return useContentStore("readonly", (store) => store.get(CONTENT_RECORD_KEY));
+}
+
+function writePersistentContent(value) {
+  return useContentStore("readwrite", (store) => store.put(value, CONTENT_RECORD_KEY));
+}
+
+function clearPersistentContent() {
+  return useContentStore("readwrite", (store) => store.delete(CONTENT_RECORD_KEY));
 }
 
 function encodeContent(value) {
@@ -395,6 +453,7 @@ function ContentEditor({ content, onSave, onReset }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [draft, setDraft] = useState(content);
 
   useEffect(() => setDraft(content), [content]);
@@ -524,7 +583,7 @@ function ContentEditor({ content, onSave, onReset }) {
     try {
       const image = await optimizeImage(file);
       setDraft((current) => ({ ...current, mediaMode: "image", backgroundImage: image }));
-      setNotice("Image compressed and stored in this browser.");
+      setNotice("Image ready. Click Save changes to keep it after refresh.");
     } catch (imageError) {
       setNotice(imageError.message);
     }
@@ -536,23 +595,36 @@ function ContentEditor({ content, onSave, onReset }) {
     try {
       const image = await optimizeImage(file);
       update("logoImage", image);
-      setNotice("Logo image compressed and stored in this browser.");
+      setNotice("Logo image ready. Click Save changes to keep it after refresh.");
     } catch (imageError) {
       setNotice(imageError.message);
     }
   };
 
-  const save = () => {
-    const result = onSave(draft);
-    setNotice(result);
+  const save = async () => {
+    setIsSaving(true);
+    try {
+      setNotice(await onSave(draft));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const copyLink = async () => {
-    const encoded = encodeContent(draft);
-    const url = `${window.location.origin}${window.location.pathname}${window.location.search}#content=${encoded}`;
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
+    try {
+      const encoded = encodeContent(draft);
+      const url = `${window.location.origin}${window.location.pathname}${window.location.search}#content=${encoded}`;
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setNotice(
+        containsLocalImage(draft)
+          ? "Share link copied. Local uploads are excluded; use public image URLs when sharing."
+          : "Share link copied with the current text and image URLs.",
+      );
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setNotice("Unable to copy the share link. Please allow clipboard access and try again.");
+    }
   };
 
   return (
@@ -862,16 +934,21 @@ function ContentEditor({ content, onSave, onReset }) {
                     </button>
                   </EditorGroup>
 
-                  {notice && <p className="border-l-2 border-[#5ed29c] pl-3 text-xs leading-5 text-white/60">{notice}</p>}
                 </div>
 
                 <footer className="grid shrink-0 grid-cols-[auto_1fr] gap-2 border-t border-white/10 p-4">
+                  {notice && (
+                    <p className="col-span-2 border-l-2 border-[#5ed29c] py-1 pl-3 text-xs leading-5 text-white/65" aria-live="polite">
+                      {notice}
+                    </p>
+                  )}
                   <button
                     className="grid size-11 place-items-center border border-white/15 text-white/65 hover:text-white"
                     type="button"
                     title="Reset content"
-                    onClick={() => {
-                      const resetValue = onReset();
+                    disabled={isSaving}
+                    onClick={async () => {
+                      const resetValue = await onReset();
                       setDraft(resetValue);
                       setNotice("Default content restored.");
                     }}
@@ -881,9 +958,10 @@ function ContentEditor({ content, onSave, onReset }) {
                   <button
                     className="flex min-h-11 items-center justify-center gap-2 bg-[#5ed29c] text-xs font-bold uppercase text-[#070b0a]"
                     type="button"
+                    disabled={isSaving}
                     onClick={save}
                   >
-                    <Save size={16} /> Save changes
+                    <Save size={16} /> {isSaving ? "Saving..." : "Save changes"}
                   </button>
                   <button
                     className="col-span-2 flex min-h-11 items-center justify-center gap-2 border border-white/15 text-xs font-bold uppercase text-white/70 hover:border-[#5ed29c] hover:text-[#5ed29c]"
@@ -907,26 +985,67 @@ function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [content, setContent] = useState(readInitialContent);
 
-  const saveContent = (nextContent) => {
+  useEffect(() => {
+    let cancelled = false;
+    const hashValue = window.location.hash.startsWith("#content=")
+      ? window.location.hash.slice("#content=".length)
+      : "";
+    const sharedContent = hashValue ? decodeContent(hashValue) : null;
+
+    if (sharedContent) {
+      writePersistentContent(sharedContent).catch(() => undefined);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    readPersistentContent()
+      .then((savedContent) => {
+        if (!cancelled && savedContent) setContent(mergeContent(savedContent));
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const saveContent = async (nextContent) => {
     const merged = mergeContent(nextContent);
     setContent(merged);
+
+    let backupSaved = false;
+    let fullContentSaved = false;
     try {
-      localStorage.setItem(CONTENT_STORAGE_KEY, JSON.stringify(merged));
-      window.history.replaceState(
-        null,
-        "",
-        `${window.location.pathname}${window.location.search}#content=${encodeContent(merged)}`,
-      );
-      return containsLocalImage(merged)
-        ? "Saved locally. The uploaded image stays in this browser; use an image URL for a fully shareable link."
-        : "Saved. Text and URL changes are now included in the shareable link.";
+      localStorage.setItem(CONTENT_STORAGE_KEY, JSON.stringify(stripLocalImages(merged)));
+      backupSaved = true;
     } catch {
-      return "Preview updated, but browser storage is full. Use a smaller image or an image URL.";
+      backupSaved = false;
     }
+
+    try {
+      await writePersistentContent(merged);
+      fullContentSaved = true;
+    } catch {
+      fullContentSaved = false;
+    }
+
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+
+    if (fullContentSaved) {
+      return "Saved in this browser. Refreshing will keep the current text, links, and uploaded images.";
+    }
+    if (backupSaved) {
+      return containsLocalImage(merged)
+        ? "Text and image links were saved, but local uploads could not be stored. Use public image URLs for those images."
+        : "Saved in this browser. Refreshing will keep the current text and image links.";
+    }
+    return "Preview updated, but this browser blocked persistent storage. Check privacy settings and try again.";
   };
 
-  const resetContent = () => {
+  const resetContent = async () => {
     localStorage.removeItem(CONTENT_STORAGE_KEY);
+    await clearPersistentContent().catch(() => undefined);
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
     setContent(DEFAULT_CONTENT);
     return DEFAULT_CONTENT;
