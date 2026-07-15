@@ -14,11 +14,15 @@ import {
   X,
 } from "lucide-react";
 import { CONTENT_STORAGE_KEY, DEFAULT_CONTENT } from "./content";
+import { AboutSection, BlogSection, ProjectsSection, ResumeSection } from "./Sections";
 
 const PASSWORD_HASH = "3090ad7f5b83a40b050aad6e04d2f663049aca5cf0253e1b2ff592fcfed3ef9c";
 const navItems = ["PROJECTS", "BLOG", "ABOUT", "RESUME"];
 
 function mergeContent(value = {}) {
+  const mergeItems = (defaults, incoming = []) =>
+    defaults.map((item, index) => ({ ...item, ...(incoming[index] || {}) }));
+
   return {
     ...DEFAULT_CONTENT,
     ...value,
@@ -26,14 +30,43 @@ function mergeContent(value = {}) {
       ...DEFAULT_CONTENT.card,
       ...(value.card || {}),
     },
+    sectionSizes: {
+      ...DEFAULT_CONTENT.sectionSizes,
+      ...(value.sectionSizes || {}),
+    },
+    projects: {
+      ...DEFAULT_CONTENT.projects,
+      ...(value.projects || {}),
+      items: mergeItems(DEFAULT_CONTENT.projects.items, value.projects?.items),
+    },
+    blog: {
+      ...DEFAULT_CONTENT.blog,
+      ...(value.blog || {}),
+      items: mergeItems(DEFAULT_CONTENT.blog.items, value.blog?.items),
+    },
+    resume: {
+      ...DEFAULT_CONTENT.resume,
+      ...(value.resume || {}),
+      items: mergeItems(DEFAULT_CONTENT.resume.items, value.resume?.items),
+    },
+    about: {
+      ...DEFAULT_CONTENT.about,
+      ...(value.about || {}),
+    },
   };
 }
 
+function stripLocalImages(value) {
+  if (typeof value === "string") return value.startsWith("data:") ? "" : value;
+  if (Array.isArray(value)) return value.map(stripLocalImages);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, stripLocalImages(item)]));
+  }
+  return value;
+}
+
 function encodeContent(value) {
-  const shareable = {
-    ...value,
-    backgroundImage: value.backgroundImage?.startsWith("data:") ? "" : value.backgroundImage,
-  };
+  const shareable = stripLocalImages(value);
   const bytes = new TextEncoder().encode(JSON.stringify(shareable));
   let binary = "";
   bytes.forEach((byte) => {
@@ -179,7 +212,7 @@ function Navigation({ brand, isOpen, onToggle, onClose }) {
 
   return (
     <>
-      <header className="absolute inset-x-0 top-0 z-50 border-b border-white/10">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#070b0a]/35 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
           <Logo brand={brand} />
           <nav className="hidden items-center gap-9 md:flex" aria-label="Primary navigation">
@@ -309,6 +342,35 @@ function Field({ label, value, onChange, multiline = false }) {
   );
 }
 
+function RangeField({ label, value, min = 80, max = 280, onChange }) {
+  return (
+    <label className="block text-[11px] font-bold uppercase text-white/55">
+      <span className="flex items-center justify-between">
+        {label}
+        <span className="text-[#5ed29c]">{value}vh</span>
+      </span>
+      <input
+        className="mt-3 w-full accent-[#5ed29c]"
+        type="range"
+        min={min}
+        max={max}
+        step="5"
+        value={value}
+        onChange={onChange}
+      />
+    </label>
+  );
+}
+
+function EditorGroup({ title, children, open = false }) {
+  return (
+    <details className="border border-white/12" open={open}>
+      <summary className="cursor-pointer px-4 py-4 text-[11px] font-bold uppercase text-[#5ed29c]">{title}</summary>
+      <div className="space-y-4 border-t border-white/10 p-4">{children}</div>
+    </details>
+  );
+}
+
 function ContentEditor({ content, onSave, onReset }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -351,6 +413,26 @@ function ContentEditor({ content, onSave, onReset }) {
   const update = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
   const updateCard = (key, value) =>
     setDraft((current) => ({ ...current, card: { ...current.card, [key]: value } }));
+  const updateSize = (key, value) =>
+    setDraft((current) => ({
+      ...current,
+      sectionSizes: { ...current.sectionSizes, [key]: Number(value) },
+    }));
+  const updateSection = (section, key, value) =>
+    setDraft((current) => ({
+      ...current,
+      [section]: { ...current[section], [key]: value },
+    }));
+  const updateSectionItem = (section, index, key, value) =>
+    setDraft((current) => ({
+      ...current,
+      [section]: {
+        ...current[section],
+        items: current[section].items.map((item, itemIndex) =>
+          itemIndex === index ? { ...item, [key]: value } : item,
+        ),
+      },
+    }));
 
   const handleImage = async (event) => {
     const file = event.target.files?.[0];
@@ -433,74 +515,126 @@ function ContentEditor({ content, onSave, onReset }) {
               </form>
             ) : (
               <>
-                <div className="flex-1 space-y-5 overflow-y-auto p-5">
-                  <div className="grid grid-cols-2 gap-2" aria-label="Background type">
-                    <button
-                      className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
-                        draft.mediaMode === "video"
-                          ? "border-[#5ed29c] bg-[#5ed29c] text-[#070b0a]"
-                          : "border-white/15 text-white/65"
-                      }`}
-                      type="button"
-                      onClick={() => update("mediaMode", "video")}
-                    >
-                      <Video size={15} /> Video
-                    </button>
-                    <button
-                      className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
-                        draft.mediaMode === "image"
-                          ? "border-[#5ed29c] bg-[#5ed29c] text-[#070b0a]"
-                          : "border-white/15 text-white/65"
-                      }`}
-                      type="button"
-                      onClick={() => update("mediaMode", "image")}
-                    >
-                      <ImageIcon size={15} /> Image
-                    </button>
-                  </div>
+                <div className="flex-1 space-y-4 overflow-y-auto p-5">
+                  <EditorGroup title="Hero section" open>
+                    <div className="grid grid-cols-2 gap-2" aria-label="Background type">
+                      <button
+                        className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
+                          draft.mediaMode === "video"
+                            ? "border-[#5ed29c] bg-[#5ed29c] text-[#070b0a]"
+                            : "border-white/15 text-white/65"
+                        }`}
+                        type="button"
+                        onClick={() => update("mediaMode", "video")}
+                      >
+                        <Video size={15} /> Video
+                      </button>
+                      <button
+                        className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
+                          draft.mediaMode === "image"
+                            ? "border-[#5ed29c] bg-[#5ed29c] text-[#070b0a]"
+                            : "border-white/15 text-white/65"
+                        }`}
+                        type="button"
+                        onClick={() => update("mediaMode", "image")}
+                      >
+                        <ImageIcon size={15} /> Image
+                      </button>
+                    </div>
 
-                  {draft.mediaMode === "video" ? (
-                    <Field label="HLS video URL" value={draft.videoUrl} onChange={(event) => update("videoUrl", event.target.value)} />
-                  ) : (
-                    <>
-                      <Field
-                        label="Background image URL"
-                        value={draft.backgroundImage?.startsWith("data:") ? "" : draft.backgroundImage}
-                        onChange={(event) => update("backgroundImage", event.target.value)}
-                      />
-                      <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-dashed border-white/25 text-xs font-bold text-white/70 hover:border-[#5ed29c] hover:text-[#5ed29c]">
-                        <Upload size={15} /> Upload local image
-                        <input className="sr-only" type="file" accept="image/*" onChange={handleImage} />
-                      </label>
-                    </>
-                  )}
+                    {draft.mediaMode === "video" ? (
+                      <Field label="HLS video URL" value={draft.videoUrl} onChange={(event) => update("videoUrl", event.target.value)} />
+                    ) : (
+                      <>
+                        <Field
+                          label="Background image URL"
+                          value={draft.backgroundImage?.startsWith("data:") ? "" : draft.backgroundImage}
+                          onChange={(event) => update("backgroundImage", event.target.value)}
+                        />
+                        <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-dashed border-white/25 text-xs font-bold text-white/70 hover:border-[#5ed29c] hover:text-[#5ed29c]">
+                          <Upload size={15} /> Upload local image
+                          <input className="sr-only" type="file" accept="image/*" onChange={handleImage} />
+                        </label>
+                      </>
+                    )}
 
-                  <div className="h-px bg-white/10" />
-                  <Field label="Brand" value={draft.brand} onChange={(event) => update("brand", event.target.value)} />
-                  <Field label="Eyebrow" value={draft.eyebrow} onChange={(event) => update("eyebrow", event.target.value)} />
-                  <Field label="Headline" value={draft.headline} onChange={(event) => update("headline", event.target.value)} />
-                  <Field
-                    label="Description"
-                    value={draft.description}
-                    multiline
-                    onChange={(event) => update("description", event.target.value)}
-                  />
-                  <Field label="CTA label" value={draft.ctaLabel} onChange={(event) => update("ctaLabel", event.target.value)} />
+                    <Field label="Brand" value={draft.brand} onChange={(event) => update("brand", event.target.value)} />
+                    <Field label="Eyebrow" value={draft.eyebrow} onChange={(event) => update("eyebrow", event.target.value)} />
+                    <Field label="Headline" value={draft.headline} onChange={(event) => update("headline", event.target.value)} />
+                    <Field label="Description" value={draft.description} multiline onChange={(event) => update("description", event.target.value)} />
+                    <Field label="CTA label" value={draft.ctaLabel} onChange={(event) => update("ctaLabel", event.target.value)} />
+                    <div className="h-px bg-white/10" />
+                    <p className="text-[10px] font-bold uppercase text-white/35">Glass card</p>
+                    <Field label="Year tag" value={draft.card.year} onChange={(event) => updateCard("year", event.target.value)} />
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Lead" value={draft.card.lead} onChange={(event) => updateCard("lead", event.target.value)} />
+                      <Field label="Serif word" value={draft.card.accent} onChange={(event) => updateCard("accent", event.target.value)} />
+                    </div>
+                    <Field label="Tail" value={draft.card.tail} onChange={(event) => updateCard("tail", event.target.value)} />
+                    <Field label="Card description" value={draft.card.description} multiline onChange={(event) => updateCard("description", event.target.value)} />
+                  </EditorGroup>
 
-                  <div className="h-px bg-white/10" />
-                  <p className="text-[11px] font-bold uppercase text-[#5ed29c]">Glass card</p>
-                  <Field label="Year tag" value={draft.card.year} onChange={(event) => updateCard("year", event.target.value)} />
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Lead" value={draft.card.lead} onChange={(event) => updateCard("lead", event.target.value)} />
-                    <Field label="Serif word" value={draft.card.accent} onChange={(event) => updateCard("accent", event.target.value)} />
-                  </div>
-                  <Field label="Tail" value={draft.card.tail} onChange={(event) => updateCard("tail", event.target.value)} />
-                  <Field
-                    label="Card description"
-                    value={draft.card.description}
-                    multiline
-                    onChange={(event) => updateCard("description", event.target.value)}
-                  />
+                  <EditorGroup title="Section heights">
+                    <RangeField label="Projects" value={draft.sectionSizes.projects} min={180} max={340} onChange={(event) => updateSize("projects", event.target.value)} />
+                    <RangeField label="Blog" value={draft.sectionSizes.blog} onChange={(event) => updateSize("blog", event.target.value)} />
+                    <RangeField label="Resume" value={draft.sectionSizes.resume} onChange={(event) => updateSize("resume", event.target.value)} />
+                    <RangeField label="About" value={draft.sectionSizes.about} onChange={(event) => updateSize("about", event.target.value)} />
+                  </EditorGroup>
+
+                  <EditorGroup title="Projects section">
+                    <Field label="Eyebrow" value={draft.projects.eyebrow} onChange={(event) => updateSection("projects", "eyebrow", event.target.value)} />
+                    <Field label="Title" value={draft.projects.title} multiline onChange={(event) => updateSection("projects", "title", event.target.value)} />
+                    <Field label="Description" value={draft.projects.description} multiline onChange={(event) => updateSection("projects", "description", event.target.value)} />
+                    {draft.projects.items.map((item, index) => (
+                      <div key={item.index} className="space-y-4 border-t border-white/10 pt-4">
+                        <p className="text-[10px] font-bold uppercase text-white/35">Project {index + 1}</p>
+                        <Field label="Title" value={item.title} onChange={(event) => updateSectionItem("projects", index, "title", event.target.value)} />
+                        <Field label="Label" value={item.label} onChange={(event) => updateSectionItem("projects", index, "label", event.target.value)} />
+                        <Field label="Description" value={item.description} multiline onChange={(event) => updateSectionItem("projects", index, "description", event.target.value)} />
+                        <Field label="Metric" value={item.metric} onChange={(event) => updateSectionItem("projects", index, "metric", event.target.value)} />
+                        <Field label="Image URL" value={item.asset} onChange={(event) => updateSectionItem("projects", index, "asset", event.target.value)} />
+                      </div>
+                    ))}
+                  </EditorGroup>
+
+                  <EditorGroup title="Blog section">
+                    <Field label="Eyebrow" value={draft.blog.eyebrow} onChange={(event) => updateSection("blog", "eyebrow", event.target.value)} />
+                    <Field label="Title" value={draft.blog.title} multiline onChange={(event) => updateSection("blog", "title", event.target.value)} />
+                    <Field label="Description" value={draft.blog.description} multiline onChange={(event) => updateSection("blog", "description", event.target.value)} />
+                    {draft.blog.items.map((item, index) => (
+                      <div key={`${item.category}-${index}`} className="space-y-4 border-t border-white/10 pt-4">
+                        <p className="text-[10px] font-bold uppercase text-white/35">Article {index + 1}</p>
+                        <Field label="Category" value={item.category} onChange={(event) => updateSectionItem("blog", index, "category", event.target.value)} />
+                        <Field label="Title" value={item.title} multiline onChange={(event) => updateSectionItem("blog", index, "title", event.target.value)} />
+                        <Field label="Meta" value={item.meta} onChange={(event) => updateSectionItem("blog", index, "meta", event.target.value)} />
+                        <Field label="Image URL" value={item.asset} onChange={(event) => updateSectionItem("blog", index, "asset", event.target.value)} />
+                      </div>
+                    ))}
+                  </EditorGroup>
+
+                  <EditorGroup title="Resume section">
+                    <Field label="Eyebrow" value={draft.resume.eyebrow} onChange={(event) => updateSection("resume", "eyebrow", event.target.value)} />
+                    <Field label="Title" value={draft.resume.title} multiline onChange={(event) => updateSection("resume", "title", event.target.value)} />
+                    <Field label="Description" value={draft.resume.description} multiline onChange={(event) => updateSection("resume", "description", event.target.value)} />
+                    {draft.resume.items.map((item, index) => (
+                      <div key={item.step} className="space-y-4 border-t border-white/10 pt-4">
+                        <p className="text-[10px] font-bold uppercase text-white/35">Step {index + 1}</p>
+                        <Field label="Title" value={item.title} onChange={(event) => updateSectionItem("resume", index, "title", event.target.value)} />
+                        <Field label="Description" value={item.description} multiline onChange={(event) => updateSectionItem("resume", index, "description", event.target.value)} />
+                      </div>
+                    ))}
+                  </EditorGroup>
+
+                  <EditorGroup title="Personal introduction">
+                    <Field label="Eyebrow" value={draft.about.eyebrow} onChange={(event) => updateSection("about", "eyebrow", event.target.value)} />
+                    <Field label="Title" value={draft.about.title} multiline onChange={(event) => updateSection("about", "title", event.target.value)} />
+                    <Field label="Name" value={draft.about.name} onChange={(event) => updateSection("about", "name", event.target.value)} />
+                    <Field label="Role" value={draft.about.role} onChange={(event) => updateSection("about", "role", event.target.value)} />
+                    <Field label="Biography" value={draft.about.bio} multiline onChange={(event) => updateSection("about", "bio", event.target.value)} />
+                    <Field label="Email" value={draft.about.email} onChange={(event) => updateSection("about", "email", event.target.value)} />
+                    <Field label="Location" value={draft.about.location} onChange={(event) => updateSection("about", "location", event.target.value)} />
+                    <Field label="Portrait / image URL" value={draft.about.image} onChange={(event) => updateSection("about", "image", event.target.value)} />
+                  </EditorGroup>
 
                   {notice && <p className="border-l-2 border-[#5ed29c] pl-3 text-xs leading-5 text-white/60">{notice}</p>}
                 </div>
@@ -569,41 +703,47 @@ function App() {
   };
 
   return (
-    <main id="top" className="relative min-h-[100dvh] overflow-hidden bg-[#070b0a] text-white">
-      <BackgroundMedia content={content} />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,#070b0a_0%,rgba(7,11,10,0.88)_28%,rgba(7,11,10,0.18)_72%,transparent_100%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(0deg,#070b0a_0%,rgba(7,11,10,0.72)_18%,transparent_58%)]" />
-      <div className="absolute inset-0 bg-black/10" />
-      <CentralGlow />
-      <GridLines />
+    <main id="top" className="min-h-[100dvh] overflow-x-clip bg-[#070b0a] text-white">
+      <div className="relative min-h-[100dvh] overflow-hidden">
+        <BackgroundMedia content={content} />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#070b0a_0%,rgba(7,11,10,0.88)_28%,rgba(7,11,10,0.18)_72%,transparent_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(0deg,#070b0a_0%,rgba(7,11,10,0.72)_18%,transparent_58%)]" />
+        <div className="absolute inset-0 bg-black/10" />
+        <CentralGlow />
+        <GridLines />
 
-      <Navigation
-        brand={content.brand}
-        isOpen={isMenuOpen}
-        onToggle={() => setIsMenuOpen((current) => !current)}
-        onClose={() => setIsMenuOpen(false)}
-      />
+        <Navigation
+          brand={content.brand}
+          isOpen={isMenuOpen}
+          onToggle={() => setIsMenuOpen((current) => !current)}
+          onClose={() => setIsMenuOpen(false)}
+        />
 
-      <section className="relative z-10 mx-auto flex min-h-[100dvh] max-w-[1440px] items-end px-5 pb-10 pt-40 sm:px-8 sm:pb-14 lg:px-12 lg:pb-16">
-        <div className="w-full max-w-[860px]">
-          <GlassCard content={content.card} />
-          <div className="-mt-8 border-l border-white/20 pl-5 sm:pl-7">
-            <p className="font-jakarta text-[11px] font-bold uppercase tracking-[0] text-[#5ed29c]">{content.eyebrow}</p>
-            <h1 className="mt-4 text-[40px] font-extrabold uppercase leading-[0.94] tracking-[0] text-white sm:text-[54px] lg:text-[72px]">
-              {content.headline}<span className="text-[#5ed29c]">.</span>
-            </h1>
-            <p className="mt-5 max-w-lg text-[14px] leading-6 text-white/70">{content.description}</p>
-            <a
-              className="group mt-7 inline-flex min-h-12 items-center gap-3 rounded-full bg-[#5ed29c] px-6 text-[12px] font-bold uppercase text-[#070b0a] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-[#72e1ad] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#5ed29c]"
-              href="#projects"
-            >
-              {content.ctaLabel}
-              <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" size={17} />
-            </a>
+        <section className="relative z-10 mx-auto flex min-h-[100dvh] max-w-[1440px] items-end px-5 pb-10 pt-40 sm:px-8 sm:pb-14 lg:px-12 lg:pb-16">
+          <div className="w-full max-w-[860px]">
+            <GlassCard content={content.card} />
+            <div className="-mt-8 border-l border-white/20 pl-5 sm:pl-7">
+              <p className="font-jakarta text-[11px] font-bold uppercase tracking-[0] text-[#5ed29c]">{content.eyebrow}</p>
+              <h1 className="mt-4 text-[40px] font-extrabold uppercase leading-[0.94] tracking-[0] text-white sm:text-[54px] lg:text-[72px]">
+                {content.headline}<span className="text-[#5ed29c]">.</span>
+              </h1>
+              <p className="mt-5 max-w-lg text-[14px] leading-6 text-white/70">{content.description}</p>
+              <a
+                className="group mt-7 inline-flex min-h-12 items-center gap-3 rounded-full bg-[#5ed29c] px-6 text-[12px] font-bold uppercase text-[#070b0a] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-[#72e1ad] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#5ed29c]"
+                href="#projects"
+              >
+                {content.ctaLabel}
+                <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" size={17} />
+              </a>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
+      <ProjectsSection content={content.projects} size={content.sectionSizes.projects} />
+      <BlogSection content={content.blog} size={content.sectionSizes.blog} />
+      <ResumeSection content={content.resume} size={content.sectionSizes.resume} />
+      <AboutSection content={content.about} size={content.sectionSizes.about} />
       <ContentEditor content={content} onSave={saveContent} onReset={resetContent} />
     </main>
   );

@@ -21,7 +21,20 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100dvh;
+  overflow-x: clip;
   background: #070b0a;
+}
+
+section[id] {
+  scroll-margin-top: 80px;
+}
+
+summary {
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
 }
 
 button,
