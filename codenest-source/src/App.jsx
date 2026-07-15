@@ -5,6 +5,7 @@ import {
   Copy,
   Image as ImageIcon,
   LockKeyhole,
+  LogOut,
   Menu,
   Plus,
   RotateCcw,
@@ -18,8 +19,16 @@ import {
 import { CONTENT_STORAGE_KEY, DEFAULT_CONTENT } from "./content";
 import { AboutSection, BlogSection, ProjectsSection, ResumeSection } from "./Sections";
 import DetailPage from "./DetailPage";
+import {
+  fetchRemoteContent,
+  getAdminSession,
+  saveRemoteContent,
+  signInAdmin,
+  signOutAdmin,
+  subscribeAdminSession,
+  uploadPortfolioImage,
+} from "./supabase";
 
-const PASSWORD_HASH = "3090ad7f5b83a40b050aad6e04d2f663049aca5cf0253e1b2ff592fcfed3ef9c";
 const navItems = ["PROJECTS", "BLOG", "ABOUT", "RESUME"];
 const CONTENT_DB_NAME = "codenest-editor";
 const CONTENT_STORE_NAME = "content";
@@ -173,13 +182,6 @@ function readInitialContent() {
   } catch {
     return DEFAULT_CONTENT;
   }
-}
-
-async function sha256(value) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 function optimizeImage(file) {
@@ -417,6 +419,19 @@ function Field({ label, value, onChange, multiline = false }) {
   );
 }
 
+function UploadButton({ label = "Upload image", onChange, disabled = false }) {
+  return (
+    <label
+      className={`flex min-h-10 items-center justify-center gap-2 border border-dashed border-white/20 text-[10px] font-bold uppercase text-white/55 transition-colors ${
+        disabled ? "cursor-wait opacity-45" : "cursor-pointer hover:border-[#5ed29c] hover:text-[#5ed29c]"
+      }`}
+    >
+      <Upload size={14} /> {disabled ? "Uploading..." : label}
+      <input className="sr-only" type="file" accept="image/*" disabled={disabled} onChange={onChange} />
+    </label>
+  );
+}
+
 function RangeField({ label, value, min = 80, max = 280, onChange }) {
   return (
     <label className="block text-[11px] font-bold uppercase text-white/55">
@@ -446,15 +461,18 @@ function EditorGroup({ title, children, open = false }) {
   );
 }
 
-function ContentEditor({ content, onSave, onReset }) {
+function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onSave, onReset, onUpload }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [draft, setDraft] = useState(content);
+  const isUnlocked = Boolean(session);
 
   useEffect(() => setDraft(content), [content]);
 
@@ -477,13 +495,16 @@ function ContentEditor({ content, onSave, onReset }) {
 
   const unlock = async (event) => {
     event.preventDefault();
-    if ((await sha256(password)) === PASSWORD_HASH) {
-      setIsUnlocked(true);
+    setIsAuthenticating(true);
+    try {
+      await onSignIn(email.trim(), password);
       setError("");
       setPassword("");
-      return;
+    } catch (authError) {
+      setError(authError.message || "Unable to sign in.");
+    } finally {
+      setIsAuthenticating(false);
     }
-    setError("Password is incorrect.");
   };
 
   const update = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
@@ -573,33 +594,33 @@ function ContentEditor({ content, onSave, onReset }) {
       },
     }));
 
-  const handleImage = async (event) => {
+  const uploadImage = async (event, area, applyValue) => {
     const file = event.target.files?.[0];
     if (!file) return;
     if (file.size > 12 * 1024 * 1024) {
       setNotice("Please choose an image smaller than 12 MB.");
       return;
     }
+    setIsUploading(true);
     try {
       const image = await optimizeImage(file);
-      setDraft((current) => ({ ...current, mediaMode: "image", backgroundImage: image }));
-      setNotice("Image ready. Click Save changes to keep it after refresh.");
+      const publicUrl = await onUpload(image, area);
+      applyValue(publicUrl);
+      setNotice("Image uploaded. Click Save changes to publish the new URL.");
     } catch (imageError) {
-      setNotice(imageError.message);
+      setNotice(imageError.message || "Unable to upload this image.");
+    } finally {
+      setIsUploading(false);
+      event.target.value = "";
     }
   };
 
-  const handleLogoImage = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const image = await optimizeImage(file);
-      update("logoImage", image);
-      setNotice("Logo image ready. Click Save changes to keep it after refresh.");
-    } catch (imageError) {
-      setNotice(imageError.message);
-    }
-  };
+  const handleImage = (event) =>
+    uploadImage(event, "hero", (publicUrl) =>
+      setDraft((current) => ({ ...current, mediaMode: "image", backgroundImage: publicUrl })),
+    );
+
+  const handleLogoImage = (event) => uploadImage(event, "logo", (publicUrl) => update("logoImage", publicUrl));
 
   const save = async () => {
     setIsSaving(true);
@@ -647,34 +668,62 @@ function ContentEditor({ content, onSave, onReset }) {
                 <Settings size={17} className="text-[#5ed29c]" />
                 <div>
                   <p className="text-sm font-bold">Content editor</p>
-                  <p className="text-[10px] text-white/45">CodeNest hero</p>
+                  <p className={`text-[10px] ${cloudStatus === "online" ? "text-[#5ed29c]" : "text-white/45"}`}>
+                    {cloudStatus === "online" ? "Supabase connected" : cloudStatus === "connecting" ? "Connecting..." : "Local fallback"}
+                  </p>
                 </div>
               </div>
-              <button className="grid size-10 place-items-center" type="button" aria-label="Close editor" onClick={closeEditor}>
-                <X size={20} />
-              </button>
+              <div className="flex items-center">
+                {isUnlocked && (
+                  <button
+                    className="grid size-10 place-items-center text-white/55 hover:text-[#5ed29c]"
+                    type="button"
+                    title="Sign out"
+                    aria-label="Sign out of editor"
+                    onClick={onSignOut}
+                  >
+                    <LogOut size={17} />
+                  </button>
+                )}
+                <button className="grid size-10 place-items-center" type="button" aria-label="Close editor" onClick={closeEditor}>
+                  <X size={20} />
+                </button>
+              </div>
             </header>
 
             {!isUnlocked ? (
               <form className="flex flex-1 flex-col justify-center p-6" onSubmit={unlock}>
                 <LockKeyhole size={28} className="text-[#5ed29c]" />
-                <h2 className="mt-5 text-2xl font-extrabold">Unlock editing</h2>
-                <p className="mt-2 max-w-xs text-sm leading-6 text-white/55">
-                  Enter the replacement password to update text and background media.
-                </p>
+                <h2 className="mt-5 text-2xl font-extrabold">Admin sign in</h2>
+                <p className="mt-2 max-w-xs text-sm leading-6 text-white/55">Use the portfolio administrator account created in Supabase Auth.</p>
                 <label className="mt-7 text-[11px] font-bold uppercase text-white/55">
+                  Email
+                  <input
+                    className="mt-2 w-full border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#5ed29c]"
+                    type="email"
+                    autoComplete="email"
+                    autoFocus
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                  />
+                </label>
+                <label className="mt-4 text-[11px] font-bold uppercase text-white/55">
                   Password
                   <input
                     className="mt-2 w-full border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#5ed29c]"
                     type="password"
-                    autoFocus
+                    autoComplete="current-password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                   />
                 </label>
                 {error && <p className="mt-3 text-xs text-red-300">{error}</p>}
-                <button className="mt-5 min-h-12 bg-[#5ed29c] text-xs font-bold uppercase text-[#070b0a]" type="submit">
-                  Unlock editor
+                <button
+                  className="mt-5 min-h-12 bg-[#5ed29c] text-xs font-bold uppercase text-[#070b0a] disabled:cursor-wait disabled:opacity-60"
+                  type="submit"
+                  disabled={isAuthenticating || !email.trim() || !password}
+                >
+                  {isAuthenticating ? "Signing in..." : "Sign in"}
                 </button>
               </form>
             ) : (
@@ -715,10 +764,7 @@ function ContentEditor({ content, onSave, onReset }) {
                           value={draft.backgroundImage?.startsWith("data:") ? "" : draft.backgroundImage}
                           onChange={(event) => update("backgroundImage", event.target.value)}
                         />
-                        <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-dashed border-white/25 text-xs font-bold text-white/70 hover:border-[#5ed29c] hover:text-[#5ed29c]">
-                          <Upload size={15} /> Upload local image
-                          <input className="sr-only" type="file" accept="image/*" onChange={handleImage} />
-                        </label>
+                        <UploadButton label="Upload background" disabled={isUploading} onChange={handleImage} />
                       </>
                     )}
 
@@ -728,10 +774,7 @@ function ContentEditor({ content, onSave, onReset }) {
                       value={draft.logoImage?.startsWith("data:") ? "" : draft.logoImage}
                       onChange={(event) => update("logoImage", event.target.value)}
                     />
-                    <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-dashed border-white/25 text-xs font-bold text-white/70 hover:border-[#5ed29c] hover:text-[#5ed29c]">
-                      <Upload size={15} /> Upload logo image
-                      <input className="sr-only" type="file" accept="image/*" onChange={handleLogoImage} />
-                    </label>
+                    <UploadButton label="Upload logo" disabled={isUploading} onChange={handleLogoImage} />
                     <Field label="Eyebrow" value={draft.eyebrow} onChange={(event) => update("eyebrow", event.target.value)} />
                     <Field label="Headline" value={draft.headline} onChange={(event) => update("headline", event.target.value)} />
                     <Field label="Description" value={draft.description} multiline onChange={(event) => update("description", event.target.value)} />
@@ -766,6 +809,11 @@ function ContentEditor({ content, onSave, onReset }) {
                         <Field label="Description" value={item.description} multiline onChange={(event) => updateSectionItem("projects", index, "description", event.target.value)} />
                         <Field label="Metric" value={item.metric} onChange={(event) => updateSectionItem("projects", index, "metric", event.target.value)} />
                         <Field label="Image URL" value={item.asset} onChange={(event) => updateSectionItem("projects", index, "asset", event.target.value)} />
+                        <UploadButton
+                          label="Upload project cover"
+                          disabled={isUploading}
+                          onChange={(event) => uploadImage(event, `projects/${index}`, (publicUrl) => updateSectionItem("projects", index, "asset", publicUrl))}
+                        />
                         <RangeField
                           label="Secondary gallery height"
                           value={item.galleryHeight}
@@ -775,20 +823,27 @@ function ContentEditor({ content, onSave, onReset }) {
                         />
                         <p className="text-[10px] font-bold uppercase text-white/35">Secondary gallery images</p>
                         {item.gallery.map((image, imageIndex) => (
-                          <div key={`${index}-${imageIndex}`} className="grid grid-cols-[1fr_auto] gap-2">
-                            <Field
-                              label={`Slide ${imageIndex + 1} URL`}
-                              value={image}
-                              onChange={(event) => updateGalleryImage("projects", index, imageIndex, event.target.value)}
+                          <div key={`${index}-${imageIndex}`} className="space-y-2">
+                            <div className="grid grid-cols-[1fr_auto] gap-2">
+                              <Field
+                                label={`Slide ${imageIndex + 1} URL`}
+                                value={image}
+                                onChange={(event) => updateGalleryImage("projects", index, imageIndex, event.target.value)}
+                              />
+                              <button
+                                className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
+                                type="button"
+                                title="Remove slide"
+                                onClick={() => removeGalleryImage("projects", index, imageIndex)}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                            <UploadButton
+                              label={`Upload slide ${imageIndex + 1}`}
+                              disabled={isUploading}
+                              onChange={(event) => uploadImage(event, `projects/${index}/gallery`, (publicUrl) => updateGalleryImage("projects", index, imageIndex, publicUrl))}
                             />
-                            <button
-                              className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
-                              type="button"
-                              title="Remove slide"
-                              onClick={() => removeGalleryImage("projects", index, imageIndex)}
-                            >
-                              <Trash2 size={15} />
-                            </button>
                           </div>
                         ))}
                         <button
@@ -813,6 +868,11 @@ function ContentEditor({ content, onSave, onReset }) {
                         <Field label="Title" value={item.title} multiline onChange={(event) => updateSectionItem("blog", index, "title", event.target.value)} />
                         <Field label="Meta" value={item.meta} onChange={(event) => updateSectionItem("blog", index, "meta", event.target.value)} />
                         <Field label="Image URL" value={item.asset} onChange={(event) => updateSectionItem("blog", index, "asset", event.target.value)} />
+                        <UploadButton
+                          label="Upload article cover"
+                          disabled={isUploading}
+                          onChange={(event) => uploadImage(event, `blog/${index}`, (publicUrl) => updateSectionItem("blog", index, "asset", publicUrl))}
+                        />
                         <RangeField
                           label="Secondary gallery height"
                           value={item.galleryHeight}
@@ -822,20 +882,27 @@ function ContentEditor({ content, onSave, onReset }) {
                         />
                         <p className="text-[10px] font-bold uppercase text-white/35">Secondary gallery images</p>
                         {item.gallery.map((image, imageIndex) => (
-                          <div key={`${index}-${imageIndex}`} className="grid grid-cols-[1fr_auto] gap-2">
-                            <Field
-                              label={`Slide ${imageIndex + 1} URL`}
-                              value={image}
-                              onChange={(event) => updateGalleryImage("blog", index, imageIndex, event.target.value)}
+                          <div key={`${index}-${imageIndex}`} className="space-y-2">
+                            <div className="grid grid-cols-[1fr_auto] gap-2">
+                              <Field
+                                label={`Slide ${imageIndex + 1} URL`}
+                                value={image}
+                                onChange={(event) => updateGalleryImage("blog", index, imageIndex, event.target.value)}
+                              />
+                              <button
+                                className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
+                                type="button"
+                                title="Remove slide"
+                                onClick={() => removeGalleryImage("blog", index, imageIndex)}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                            <UploadButton
+                              label={`Upload slide ${imageIndex + 1}`}
+                              disabled={isUploading}
+                              onChange={(event) => uploadImage(event, `blog/${index}/gallery`, (publicUrl) => updateGalleryImage("blog", index, imageIndex, publicUrl))}
                             />
-                            <button
-                              className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
-                              type="button"
-                              title="Remove slide"
-                              onClick={() => removeGalleryImage("blog", index, imageIndex)}
-                            >
-                              <Trash2 size={15} />
-                            </button>
                           </div>
                         ))}
                         <button
@@ -859,6 +926,11 @@ function ContentEditor({ content, onSave, onReset }) {
                         <Field label="Title" value={item.title} onChange={(event) => updateSectionItem("resume", index, "title", event.target.value)} />
                         <Field label="Description" value={item.description} multiline onChange={(event) => updateSectionItem("resume", index, "description", event.target.value)} />
                         <Field label="Image URL" value={item.asset} onChange={(event) => updateSectionItem("resume", index, "asset", event.target.value)} />
+                        <UploadButton
+                          label="Upload learning-path cover"
+                          disabled={isUploading}
+                          onChange={(event) => uploadImage(event, `resume/${index}`, (publicUrl) => updateSectionItem("resume", index, "asset", publicUrl))}
+                        />
                         <RangeField
                           label="Secondary gallery height"
                           value={item.galleryHeight}
@@ -868,20 +940,27 @@ function ContentEditor({ content, onSave, onReset }) {
                         />
                         <p className="text-[10px] font-bold uppercase text-white/35">Secondary gallery images</p>
                         {item.gallery.map((image, imageIndex) => (
-                          <div key={`${index}-${imageIndex}`} className="grid grid-cols-[1fr_auto] gap-2">
-                            <Field
-                              label={`Slide ${imageIndex + 1} URL`}
-                              value={image}
-                              onChange={(event) => updateGalleryImage("resume", index, imageIndex, event.target.value)}
+                          <div key={`${index}-${imageIndex}`} className="space-y-2">
+                            <div className="grid grid-cols-[1fr_auto] gap-2">
+                              <Field
+                                label={`Slide ${imageIndex + 1} URL`}
+                                value={image}
+                                onChange={(event) => updateGalleryImage("resume", index, imageIndex, event.target.value)}
+                              />
+                              <button
+                                className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
+                                type="button"
+                                title="Remove slide"
+                                onClick={() => removeGalleryImage("resume", index, imageIndex)}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                            <UploadButton
+                              label={`Upload slide ${imageIndex + 1}`}
+                              disabled={isUploading}
+                              onChange={(event) => uploadImage(event, `resume/${index}/gallery`, (publicUrl) => updateGalleryImage("resume", index, imageIndex, publicUrl))}
                             />
-                            <button
-                              className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
-                              type="button"
-                              title="Remove slide"
-                              onClick={() => removeGalleryImage("resume", index, imageIndex)}
-                            >
-                              <Trash2 size={15} />
-                            </button>
                           </div>
                         ))}
                         <button
@@ -904,6 +983,11 @@ function ContentEditor({ content, onSave, onReset }) {
                     <Field label="Email" value={draft.about.email} onChange={(event) => updateSection("about", "email", event.target.value)} />
                     <Field label="Location" value={draft.about.location} onChange={(event) => updateSection("about", "location", event.target.value)} />
                     <Field label="Portrait / image URL" value={draft.about.image} onChange={(event) => updateSection("about", "image", event.target.value)} />
+                    <UploadButton
+                      label="Upload portrait"
+                      disabled={isUploading}
+                      onChange={(event) => uploadImage(event, "about", (publicUrl) => updateSection("about", "image", publicUrl))}
+                    />
                     <RangeField
                       label="Secondary gallery height"
                       value={draft.about.galleryHeight}
@@ -913,16 +997,23 @@ function ContentEditor({ content, onSave, onReset }) {
                     />
                     <p className="text-[10px] font-bold uppercase text-white/35">Secondary gallery images</p>
                     {draft.about.gallery.map((image, imageIndex) => (
-                      <div key={imageIndex} className="grid grid-cols-[1fr_auto] gap-2">
-                        <Field label={`Slide ${imageIndex + 1} URL`} value={image} onChange={(event) => updateAboutGallery(imageIndex, event.target.value)} />
-                        <button
-                          className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
-                          type="button"
-                          title="Remove slide"
-                          onClick={() => removeAboutGalleryImage(imageIndex)}
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                      <div key={imageIndex} className="space-y-2">
+                        <div className="grid grid-cols-[1fr_auto] gap-2">
+                          <Field label={`Slide ${imageIndex + 1} URL`} value={image} onChange={(event) => updateAboutGallery(imageIndex, event.target.value)} />
+                          <button
+                            className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
+                            type="button"
+                            title="Remove slide"
+                            onClick={() => removeAboutGalleryImage(imageIndex)}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                        <UploadButton
+                          label={`Upload slide ${imageIndex + 1}`}
+                          disabled={isUploading}
+                          onChange={(event) => uploadImage(event, "about/gallery", (publicUrl) => updateAboutGallery(imageIndex, publicUrl))}
+                        />
                       </div>
                     ))}
                     <button
@@ -946,7 +1037,7 @@ function ContentEditor({ content, onSave, onReset }) {
                     className="grid size-11 place-items-center border border-white/15 text-white/65 hover:text-white"
                     type="button"
                     title="Reset content"
-                    disabled={isSaving}
+                    disabled={isSaving || isUploading}
                     onClick={async () => {
                       const resetValue = await onReset();
                       setDraft(resetValue);
@@ -958,10 +1049,10 @@ function ContentEditor({ content, onSave, onReset }) {
                   <button
                     className="flex min-h-11 items-center justify-center gap-2 bg-[#5ed29c] text-xs font-bold uppercase text-[#070b0a]"
                     type="button"
-                    disabled={isSaving}
+                    disabled={isSaving || isUploading}
                     onClick={save}
                   >
-                    <Save size={16} /> {isSaving ? "Saving..." : "Save changes"}
+                    <Save size={16} /> {isSaving ? "Saving..." : isUploading ? "Uploading..." : "Save changes"}
                   </button>
                   <button
                     className="col-span-2 flex min-h-11 items-center justify-center gap-2 border border-white/15 text-xs font-bold uppercase text-white/70 hover:border-[#5ed29c] hover:text-[#5ed29c]"
@@ -984,31 +1075,92 @@ function ContentEditor({ content, onSave, onReset }) {
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [content, setContent] = useState(readInitialContent);
+  const [session, setSession] = useState(null);
+  const [cloudStatus, setCloudStatus] = useState("connecting");
 
   useEffect(() => {
     let cancelled = false;
-    const hashValue = window.location.hash.startsWith("#content=")
-      ? window.location.hash.slice("#content=".length)
-      : "";
-    const sharedContent = hashValue ? decodeContent(hashValue) : null;
+    const hydrateContent = async () => {
+      const hashValue = window.location.hash.startsWith("#content=")
+        ? window.location.hash.slice("#content=".length)
+        : "";
+      const sharedContent = hashValue ? decodeContent(hashValue) : null;
 
-    if (sharedContent) {
-      writePersistentContent(sharedContent).catch(() => undefined);
-      return () => {
-        cancelled = true;
-      };
-    }
+      if (sharedContent) {
+        await writePersistentContent(sharedContent).catch(() => undefined);
+        try {
+          await fetchRemoteContent();
+          if (!cancelled) setCloudStatus("online");
+        } catch {
+          if (!cancelled) setCloudStatus("offline");
+        }
+        return;
+      }
 
-    readPersistentContent()
-      .then((savedContent) => {
-        if (!cancelled && savedContent) setContent(mergeContent(savedContent));
-      })
-      .catch(() => undefined);
+      try {
+        const remoteContent = await fetchRemoteContent();
+        if (remoteContent && !cancelled) {
+          const merged = mergeContent(remoteContent);
+          setContent(merged);
+          localStorage.setItem(CONTENT_STORAGE_KEY, JSON.stringify(stripLocalImages(merged)));
+          await writePersistentContent(merged).catch(() => undefined);
+          if (!cancelled) setCloudStatus("online");
+          return;
+        }
+        if (!cancelled) setCloudStatus("online");
+      } catch {
+        if (!cancelled) setCloudStatus("offline");
+      }
+
+      const savedContent = await readPersistentContent().catch(() => null);
+      if (!cancelled && savedContent) setContent(mergeContent(savedContent));
+    };
+
+    hydrateContent();
 
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAdminSession()
+      .then((currentSession) => {
+        if (!cancelled) setSession(currentSession);
+      })
+      .catch(() => undefined);
+    const unsubscribe = subscribeAdminSession((currentSession) => {
+      if (!cancelled) setSession(currentSession);
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
+
+  const handleSignIn = async (email, password) => {
+    const currentSession = await signInAdmin(email, password);
+    setSession(currentSession);
+    setCloudStatus("online");
+  };
+
+  const handleSignOut = async () => {
+    await signOutAdmin();
+    setSession(null);
+  };
+
+  const handleUpload = async (dataUrl, area) => {
+    if (!session) throw new Error("Your admin session has expired. Sign in again before uploading.");
+    try {
+      const publicUrl = await uploadPortfolioImage(dataUrl, area);
+      setCloudStatus("online");
+      return publicUrl;
+    } catch (uploadError) {
+      setCloudStatus("offline");
+      throw uploadError;
+    }
+  };
 
   const saveContent = async (nextContent) => {
     const merged = mergeContent(nextContent);
@@ -1032,15 +1184,21 @@ function App() {
 
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
 
-    if (fullContentSaved) {
-      return "Saved in this browser. Refreshing will keep the current text, links, and uploaded images.";
-    }
-    if (backupSaved) {
+    try {
+      if (!session) throw new Error("Your admin session has expired. Sign in again before publishing.");
+      await saveRemoteContent(stripLocalImages(merged));
+      setCloudStatus("online");
       return containsLocalImage(merged)
-        ? "Text and image links were saved, but local uploads could not be stored. Use public image URLs for those images."
-        : "Saved in this browser. Refreshing will keep the current text and image links.";
+        ? "Published to Supabase. Local-only images were excluded; upload them again to make them public."
+        : "Published to Supabase. All visitors will now load this version.";
+    } catch (remoteError) {
+      setCloudStatus("offline");
+      if (fullContentSaved || backupSaved) {
+        return `Saved in this browser, but cloud publishing failed: ${remoteError.message || "check the Supabase setup and try again."}`;
+      }
+      return "Preview updated, but neither Supabase nor browser storage accepted the changes.";
     }
-    return "Preview updated, but this browser blocked persistent storage. Check privacy settings and try again.";
+
   };
 
   const resetContent = async () => {
@@ -1057,7 +1215,16 @@ function App() {
     return (
       <>
         <DetailPage detailId={detailId} content={content} />
-        <ContentEditor content={content} onSave={saveContent} onReset={resetContent} />
+        <ContentEditor
+          content={content}
+          session={session}
+          cloudStatus={cloudStatus}
+          onSignIn={handleSignIn}
+          onSignOut={handleSignOut}
+          onSave={saveContent}
+          onReset={resetContent}
+          onUpload={handleUpload}
+        />
       </>
     );
   }
@@ -1105,7 +1272,16 @@ function App() {
       <BlogSection content={content.blog} size={content.sectionSizes.blog} />
       <ResumeSection content={content.resume} size={content.sectionSizes.resume} />
       <AboutSection content={content.about} size={content.sectionSizes.about} />
-      <ContentEditor content={content} onSave={saveContent} onReset={resetContent} />
+      <ContentEditor
+        content={content}
+        session={session}
+        cloudStatus={cloudStatus}
+        onSignIn={handleSignIn}
+        onSignOut={handleSignOut}
+        onSave={saveContent}
+        onReset={resetContent}
+        onUpload={handleUpload}
+      />
     </main>
   );
 }
