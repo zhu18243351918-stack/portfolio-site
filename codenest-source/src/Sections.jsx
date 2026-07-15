@@ -200,13 +200,20 @@ export function ResumeSection({ content, size }) {
         </div>
 
         <div className="mt-16 grid border-l border-t border-white/12 sm:grid-cols-2 lg:grid-cols-4">
-          {content.items.map((item) => (
-            <article key={item.step} className="flex min-h-[330px] flex-col justify-between border-b border-r border-white/12 p-6 lg:min-h-[420px] lg:p-8">
-              <span className="font-jakarta text-[11px] font-bold text-[#5ed29c]">{item.step}</span>
-              <div>
-                <h3 className="text-2xl font-semibold text-white">{item.title}</h3>
-                <p className="mt-4 text-sm leading-6 text-white/50">{item.description}</p>
-              </div>
+          {content.items.map((item, index) => (
+            <article key={item.step} className="border-b border-r border-white/12">
+              <a className="group flex min-h-[500px] h-full flex-col" href={detailHref(`resume-${index}`)} aria-label={`Open ${item.title} gallery`}>
+                <div className="relative h-48 overflow-hidden bg-black/25 lg:h-56">
+                  <img className="h-full w-full object-cover opacity-55 transition-[transform,opacity] duration-500 group-hover:scale-105 group-hover:opacity-85" src={item.asset} alt="" />
+                  <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(9,14,12,0.78),transparent_70%)]" />
+                  <span className="absolute left-5 top-5 font-jakarta text-[11px] font-bold text-[#5ed29c]">{item.step}</span>
+                  <ArrowUpRight className="absolute right-5 top-5 text-white/35 transition-[color,transform] group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#5ed29c]" size={18} />
+                </div>
+                <div className="flex flex-1 flex-col justify-end p-6 lg:p-8">
+                  <h3 className="text-2xl font-semibold text-white transition-colors group-hover:text-[#5ed29c]">{item.title}</h3>
+                  <p className="mt-4 text-sm leading-6 text-white/50">{item.description}</p>
+                </div>
+              </a>
             </article>
           ))}
         </div>

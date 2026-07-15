@@ -786,6 +786,39 @@ function ContentEditor({ content, onSave, onReset }) {
                         <p className="text-[10px] font-bold uppercase text-white/35">Step {index + 1}</p>
                         <Field label="Title" value={item.title} onChange={(event) => updateSectionItem("resume", index, "title", event.target.value)} />
                         <Field label="Description" value={item.description} multiline onChange={(event) => updateSectionItem("resume", index, "description", event.target.value)} />
+                        <Field label="Image URL" value={item.asset} onChange={(event) => updateSectionItem("resume", index, "asset", event.target.value)} />
+                        <RangeField
+                          label="Secondary gallery height"
+                          value={item.galleryHeight}
+                          min={45}
+                          max={92}
+                          onChange={(event) => updateSectionItem("resume", index, "galleryHeight", Number(event.target.value))}
+                        />
+                        <p className="text-[10px] font-bold uppercase text-white/35">Secondary gallery images</p>
+                        {item.gallery.map((image, imageIndex) => (
+                          <div key={`${index}-${imageIndex}`} className="grid grid-cols-[1fr_auto] gap-2">
+                            <Field
+                              label={`Slide ${imageIndex + 1} URL`}
+                              value={image}
+                              onChange={(event) => updateGalleryImage("resume", index, imageIndex, event.target.value)}
+                            />
+                            <button
+                              className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
+                              type="button"
+                              title="Remove slide"
+                              onClick={() => removeGalleryImage("resume", index, imageIndex)}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          className="flex min-h-10 w-full items-center justify-center gap-2 border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#5ed29c] hover:text-[#5ed29c]"
+                          type="button"
+                          onClick={() => addGalleryImage("resume", index)}
+                        >
+                          <Plus size={14} /> Add slide
+                        </button>
                       </div>
                     ))}
                   </EditorGroup>

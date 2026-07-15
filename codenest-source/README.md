@@ -11,12 +11,13 @@
 5. 视频请填写 HLS `.m3u8` 链接。
 6. 图片可填写公开图片 URL，也可上传本地图片进行当前浏览器预览。
 7. `Section heights` 中可以拖动滑杆调整 Projects、Blog、Resume 和 About 的最小页面高度。
-8. 每个项目、文章和个人介绍均可设置二级图库高度，并增删或替换轮播图片 URL。
-9. 点击 `Save changes` 保存，再点击 `Copy shareable text link` 复制包含文字和素材 URL 的分享链接。
+8. 学习路径包含 8 个可点击卡片，每个卡片都可替换封面、标题、描述，并设置自己的二级轮播图库。
+9. 每个项目、文章、学习路径卡片和个人介绍均可设置二级图库高度，并增删或替换轮播图片 URL。
+10. 点击 `Save changes` 保存，再点击 `Copy shareable text link` 复制包含文字和素材 URL 的分享链接。
 
 ## 二级图库
 
-点击 Projects 图片、Blog 文章行或 About 人物图片会进入二级图库。图库支持：
+点击 Projects 图片、Blog 文章行、8 个 Resume 学习路径卡片或 About 人物图片会进入各自的二级图库。图库支持：
 
 - 触摸或鼠标横向滑动
 - 自动播放

@@ -32,6 +32,21 @@ function resolveDetail(detailId, content) {
     };
   }
 
+  if (detailId?.startsWith("resume-")) {
+    const index = Number(detailId.slice("resume-".length));
+    const item = content.resume.items[index];
+    if (!item) return null;
+    return {
+      type: "Learning path gallery",
+      marker: item.step,
+      title: item.title,
+      description: item.description,
+      meta: `${content.resume.eyebrow} / Step ${item.step}`,
+      gallery: item.gallery?.length ? item.gallery : [item.asset],
+      galleryHeight: item.galleryHeight || 68,
+    };
+  }
+
   if (detailId === "about") {
     return {
       type: "Personal gallery",
