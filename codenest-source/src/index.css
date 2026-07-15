@@ -37,6 +37,14 @@ summary::-webkit-details-marker {
   display: none;
 }
 
+.gallery-track {
+  scrollbar-width: none;
+}
+
+.gallery-track::-webkit-scrollbar {
+  display: none;
+}
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;

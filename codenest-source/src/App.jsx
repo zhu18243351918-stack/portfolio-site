@@ -6,15 +6,18 @@ import {
   Image as ImageIcon,
   LockKeyhole,
   Menu,
+  Plus,
   RotateCcw,
   Save,
   Settings,
+  Trash2,
   Upload,
   Video,
   X,
 } from "lucide-react";
 import { CONTENT_STORAGE_KEY, DEFAULT_CONTENT } from "./content";
 import { AboutSection, BlogSection, ProjectsSection, ResumeSection } from "./Sections";
+import DetailPage from "./DetailPage";
 
 const PASSWORD_HASH = "3090ad7f5b83a40b050aad6e04d2f663049aca5cf0253e1b2ff592fcfed3ef9c";
 const navItems = ["PROJECTS", "BLOG", "ABOUT", "RESUME"];
@@ -65,6 +68,13 @@ function stripLocalImages(value) {
   return value;
 }
 
+function containsLocalImage(value) {
+  if (typeof value === "string") return value.startsWith("data:");
+  if (Array.isArray(value)) return value.some(containsLocalImage);
+  if (value && typeof value === "object") return Object.values(value).some(containsLocalImage);
+  return false;
+}
+
 function encodeContent(value) {
   const shareable = stripLocalImages(value);
   const bytes = new TextEncoder().encode(JSON.stringify(shareable));
@@ -91,7 +101,14 @@ function readInitialContent() {
     ? window.location.hash.slice("#content=".length)
     : "";
   const sharedContent = hashValue ? decodeContent(hashValue) : null;
-  if (sharedContent) return sharedContent;
+  if (sharedContent) {
+    try {
+      localStorage.setItem(CONTENT_STORAGE_KEY, JSON.stringify(sharedContent));
+    } catch {
+      // The shared link still works when browser storage is unavailable.
+    }
+    return sharedContent;
+  }
 
   try {
     return mergeContent(JSON.parse(localStorage.getItem(CONTENT_STORAGE_KEY) || "{}"));
@@ -187,19 +204,19 @@ function BackgroundMedia({ content }) {
   );
 }
 
-function Logo({ brand }) {
+function Logo({ brand, logoImage }) {
   return (
     <a className="group flex items-center gap-3 text-white" href="#top" aria-label={`${brand} home`}>
-      <span className="relative grid size-8 place-items-center border border-white/45 font-mono text-[10px] font-bold">
-        C/N
-        <span className="absolute -right-1 -top-1 size-2 bg-[#5ed29c] transition-transform duration-300 group-hover:scale-125" />
+      <span className="relative grid size-8 place-items-center overflow-hidden border border-white/45 font-mono text-[10px] font-bold">
+        {logoImage ? <img className="h-full w-full object-cover" src={logoImage} alt="" /> : "C/N"}
+        {!logoImage && <span className="absolute -right-1 -top-1 size-2 bg-[#5ed29c] transition-transform duration-300 group-hover:scale-125" />}
       </span>
       <span className="text-[15px] font-bold tracking-[0]">{brand}</span>
     </a>
   );
 }
 
-function Navigation({ brand, isOpen, onToggle, onClose }) {
+function Navigation({ brand, logoImage, isOpen, onToggle, onClose }) {
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     const handleEscape = (event) => event.key === "Escape" && onClose();
@@ -214,7 +231,7 @@ function Navigation({ brand, isOpen, onToggle, onClose }) {
     <>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#070b0a]/35 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
-          <Logo brand={brand} />
+          <Logo brand={brand} logoImage={logoImage} />
           <nav className="hidden items-center gap-9 md:flex" aria-label="Primary navigation">
             {navItems.map((item) => (
               <a
@@ -433,6 +450,69 @@ function ContentEditor({ content, onSave, onReset }) {
         ),
       },
     }));
+  const updateGalleryImage = (section, itemIndex, imageIndex, value) =>
+    setDraft((current) => ({
+      ...current,
+      [section]: {
+        ...current[section],
+        items: current[section].items.map((item, index) =>
+          index === itemIndex
+            ? {
+                ...item,
+                gallery: item.gallery.map((image, galleryIndex) =>
+                  galleryIndex === imageIndex ? value : image,
+                ),
+              }
+            : item,
+        ),
+      },
+    }));
+  const addGalleryImage = (section, itemIndex) =>
+    setDraft((current) => ({
+      ...current,
+      [section]: {
+        ...current[section],
+        items: current[section].items.map((item, index) =>
+          index === itemIndex ? { ...item, gallery: [...item.gallery, item.asset] } : item,
+        ),
+      },
+    }));
+  const removeGalleryImage = (section, itemIndex, imageIndex) =>
+    setDraft((current) => ({
+      ...current,
+      [section]: {
+        ...current[section],
+        items: current[section].items.map((item, index) =>
+          index === itemIndex && item.gallery.length > 1
+            ? { ...item, gallery: item.gallery.filter((_, galleryIndex) => galleryIndex !== imageIndex) }
+            : item,
+        ),
+      },
+    }));
+  const updateAboutGallery = (imageIndex, value) =>
+    setDraft((current) => ({
+      ...current,
+      about: {
+        ...current.about,
+        gallery: current.about.gallery.map((image, index) => (index === imageIndex ? value : image)),
+      },
+    }));
+  const addAboutGalleryImage = () =>
+    setDraft((current) => ({
+      ...current,
+      about: { ...current.about, gallery: [...current.about.gallery, current.about.image] },
+    }));
+  const removeAboutGalleryImage = (imageIndex) =>
+    setDraft((current) => ({
+      ...current,
+      about: {
+        ...current.about,
+        gallery:
+          current.about.gallery.length > 1
+            ? current.about.gallery.filter((_, index) => index !== imageIndex)
+            : current.about.gallery,
+      },
+    }));
 
   const handleImage = async (event) => {
     const file = event.target.files?.[0];
@@ -450,6 +530,18 @@ function ContentEditor({ content, onSave, onReset }) {
     }
   };
 
+  const handleLogoImage = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const image = await optimizeImage(file);
+      update("logoImage", image);
+      setNotice("Logo image compressed and stored in this browser.");
+    } catch (imageError) {
+      setNotice(imageError.message);
+    }
+  };
+
   const save = () => {
     const result = onSave(draft);
     setNotice(result);
@@ -457,7 +549,7 @@ function ContentEditor({ content, onSave, onReset }) {
 
   const copyLink = async () => {
     const encoded = encodeContent(draft);
-    const url = `${window.location.origin}${window.location.pathname}#content=${encoded}`;
+    const url = `${window.location.origin}${window.location.pathname}${window.location.search}#content=${encoded}`;
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
@@ -559,6 +651,15 @@ function ContentEditor({ content, onSave, onReset }) {
                     )}
 
                     <Field label="Brand" value={draft.brand} onChange={(event) => update("brand", event.target.value)} />
+                    <Field
+                      label="Logo image URL"
+                      value={draft.logoImage?.startsWith("data:") ? "" : draft.logoImage}
+                      onChange={(event) => update("logoImage", event.target.value)}
+                    />
+                    <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-dashed border-white/25 text-xs font-bold text-white/70 hover:border-[#5ed29c] hover:text-[#5ed29c]">
+                      <Upload size={15} /> Upload logo image
+                      <input className="sr-only" type="file" accept="image/*" onChange={handleLogoImage} />
+                    </label>
                     <Field label="Eyebrow" value={draft.eyebrow} onChange={(event) => update("eyebrow", event.target.value)} />
                     <Field label="Headline" value={draft.headline} onChange={(event) => update("headline", event.target.value)} />
                     <Field label="Description" value={draft.description} multiline onChange={(event) => update("description", event.target.value)} />
@@ -593,6 +694,38 @@ function ContentEditor({ content, onSave, onReset }) {
                         <Field label="Description" value={item.description} multiline onChange={(event) => updateSectionItem("projects", index, "description", event.target.value)} />
                         <Field label="Metric" value={item.metric} onChange={(event) => updateSectionItem("projects", index, "metric", event.target.value)} />
                         <Field label="Image URL" value={item.asset} onChange={(event) => updateSectionItem("projects", index, "asset", event.target.value)} />
+                        <RangeField
+                          label="Secondary gallery height"
+                          value={item.galleryHeight}
+                          min={45}
+                          max={92}
+                          onChange={(event) => updateSectionItem("projects", index, "galleryHeight", Number(event.target.value))}
+                        />
+                        <p className="text-[10px] font-bold uppercase text-white/35">Secondary gallery images</p>
+                        {item.gallery.map((image, imageIndex) => (
+                          <div key={`${index}-${imageIndex}`} className="grid grid-cols-[1fr_auto] gap-2">
+                            <Field
+                              label={`Slide ${imageIndex + 1} URL`}
+                              value={image}
+                              onChange={(event) => updateGalleryImage("projects", index, imageIndex, event.target.value)}
+                            />
+                            <button
+                              className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
+                              type="button"
+                              title="Remove slide"
+                              onClick={() => removeGalleryImage("projects", index, imageIndex)}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          className="flex min-h-10 w-full items-center justify-center gap-2 border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#5ed29c] hover:text-[#5ed29c]"
+                          type="button"
+                          onClick={() => addGalleryImage("projects", index)}
+                        >
+                          <Plus size={14} /> Add slide
+                        </button>
                       </div>
                     ))}
                   </EditorGroup>
@@ -608,6 +741,38 @@ function ContentEditor({ content, onSave, onReset }) {
                         <Field label="Title" value={item.title} multiline onChange={(event) => updateSectionItem("blog", index, "title", event.target.value)} />
                         <Field label="Meta" value={item.meta} onChange={(event) => updateSectionItem("blog", index, "meta", event.target.value)} />
                         <Field label="Image URL" value={item.asset} onChange={(event) => updateSectionItem("blog", index, "asset", event.target.value)} />
+                        <RangeField
+                          label="Secondary gallery height"
+                          value={item.galleryHeight}
+                          min={45}
+                          max={92}
+                          onChange={(event) => updateSectionItem("blog", index, "galleryHeight", Number(event.target.value))}
+                        />
+                        <p className="text-[10px] font-bold uppercase text-white/35">Secondary gallery images</p>
+                        {item.gallery.map((image, imageIndex) => (
+                          <div key={`${index}-${imageIndex}`} className="grid grid-cols-[1fr_auto] gap-2">
+                            <Field
+                              label={`Slide ${imageIndex + 1} URL`}
+                              value={image}
+                              onChange={(event) => updateGalleryImage("blog", index, imageIndex, event.target.value)}
+                            />
+                            <button
+                              className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
+                              type="button"
+                              title="Remove slide"
+                              onClick={() => removeGalleryImage("blog", index, imageIndex)}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          className="flex min-h-10 w-full items-center justify-center gap-2 border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#5ed29c] hover:text-[#5ed29c]"
+                          type="button"
+                          onClick={() => addGalleryImage("blog", index)}
+                        >
+                          <Plus size={14} /> Add slide
+                        </button>
                       </div>
                     ))}
                   </EditorGroup>
@@ -634,6 +799,34 @@ function ContentEditor({ content, onSave, onReset }) {
                     <Field label="Email" value={draft.about.email} onChange={(event) => updateSection("about", "email", event.target.value)} />
                     <Field label="Location" value={draft.about.location} onChange={(event) => updateSection("about", "location", event.target.value)} />
                     <Field label="Portrait / image URL" value={draft.about.image} onChange={(event) => updateSection("about", "image", event.target.value)} />
+                    <RangeField
+                      label="Secondary gallery height"
+                      value={draft.about.galleryHeight}
+                      min={45}
+                      max={92}
+                      onChange={(event) => updateSection("about", "galleryHeight", Number(event.target.value))}
+                    />
+                    <p className="text-[10px] font-bold uppercase text-white/35">Secondary gallery images</p>
+                    {draft.about.gallery.map((image, imageIndex) => (
+                      <div key={imageIndex} className="grid grid-cols-[1fr_auto] gap-2">
+                        <Field label={`Slide ${imageIndex + 1} URL`} value={image} onChange={(event) => updateAboutGallery(imageIndex, event.target.value)} />
+                        <button
+                          className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
+                          type="button"
+                          title="Remove slide"
+                          onClick={() => removeAboutGalleryImage(imageIndex)}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      className="flex min-h-10 w-full items-center justify-center gap-2 border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#5ed29c] hover:text-[#5ed29c]"
+                      type="button"
+                      onClick={addAboutGalleryImage}
+                    >
+                      <Plus size={14} /> Add slide
+                    </button>
                   </EditorGroup>
 
                   {notice && <p className="border-l-2 border-[#5ed29c] pl-3 text-xs leading-5 text-white/60">{notice}</p>}
@@ -686,8 +879,12 @@ function App() {
     setContent(merged);
     try {
       localStorage.setItem(CONTENT_STORAGE_KEY, JSON.stringify(merged));
-      window.history.replaceState(null, "", `${window.location.pathname}#content=${encodeContent(merged)}`);
-      return merged.backgroundImage?.startsWith("data:")
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}#content=${encodeContent(merged)}`,
+      );
+      return containsLocalImage(merged)
         ? "Saved locally. The uploaded image stays in this browser; use an image URL for a fully shareable link."
         : "Saved. Text and URL changes are now included in the shareable link.";
     } catch {
@@ -697,10 +894,21 @@ function App() {
 
   const resetContent = () => {
     localStorage.removeItem(CONTENT_STORAGE_KEY);
-    window.history.replaceState(null, "", window.location.pathname);
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
     setContent(DEFAULT_CONTENT);
     return DEFAULT_CONTENT;
   };
+
+  const detailId = new URLSearchParams(window.location.search).get("detail");
+
+  if (detailId) {
+    return (
+      <>
+        <DetailPage detailId={detailId} content={content} />
+        <ContentEditor content={content} onSave={saveContent} onReset={resetContent} />
+      </>
+    );
+  }
 
   return (
     <main id="top" className="min-h-[100dvh] overflow-x-clip bg-[#070b0a] text-white">
@@ -714,6 +922,7 @@ function App() {
 
         <Navigation
           brand={content.brand}
+          logoImage={content.logoImage}
           isOpen={isMenuOpen}
           onToggle={() => setIsMenuOpen((current) => !current)}
           onClose={() => setIsMenuOpen(false)}

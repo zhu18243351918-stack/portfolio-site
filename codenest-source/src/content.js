@@ -1,5 +1,6 @@
 export const DEFAULT_CONTENT = {
   brand: "CodeNest",
+  logoImage: "",
   eyebrow: "Career-Ready Curriculum",
   headline: "Launch your coding career",
   description:
@@ -37,6 +38,12 @@ export const DEFAULT_CONTENT = {
         metric: "8-week guided build",
         asset:
           "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1600&q=85",
+        galleryHeight: 72,
+        gallery: [
+          "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=2000&q=88",
+          "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=2000&q=88",
+          "https://images.unsplash.com/photo-1504639725590-34d0984388bd?auto=format&fit=crop&w=2000&q=88",
+        ],
       },
       {
         index: "02",
@@ -47,6 +54,12 @@ export const DEFAULT_CONTENT = {
         metric: "Weekly expert review",
         asset:
           "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1600&q=85",
+        galleryHeight: 72,
+        gallery: [
+          "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=2000&q=88",
+          "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=2000&q=88",
+          "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=2000&q=88",
+        ],
       },
       {
         index: "03",
@@ -57,6 +70,12 @@ export const DEFAULT_CONTENT = {
         metric: "Publishable case study",
         asset:
           "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1600&q=85",
+        galleryHeight: 72,
+        gallery: [
+          "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=2000&q=88",
+          "https://images.unsplash.com/photo-1537432376769-00f5c2f4c8d2?auto=format&fit=crop&w=2000&q=88",
+          "https://images.unsplash.com/photo-1484417894907-623942c8ee29?auto=format&fit=crop&w=2000&q=88",
+        ],
       },
     ],
   },
@@ -72,6 +91,12 @@ export const DEFAULT_CONTENT = {
         meta: "6 min read",
         asset:
           "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=85",
+        galleryHeight: 68,
+        gallery: [
+          "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=2000&q=88",
+          "https://images.unsplash.com/photo-1542831371-29b0f74f9713?auto=format&fit=crop&w=2000&q=88",
+          "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?auto=format&fit=crop&w=2000&q=88",
+        ],
       },
       {
         category: "Portfolio",
@@ -79,6 +104,12 @@ export const DEFAULT_CONTENT = {
         meta: "8 min read",
         asset:
           "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=85",
+        galleryHeight: 68,
+        gallery: [
+          "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=2000&q=88",
+          "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=2000&q=88",
+          "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=2000&q=88",
+        ],
       },
       {
         category: "Career",
@@ -86,6 +117,12 @@ export const DEFAULT_CONTENT = {
         meta: "5 min read",
         asset:
           "https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=85",
+        galleryHeight: 68,
+        gallery: [
+          "https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=2000&q=88",
+          "https://images.unsplash.com/photo-1568992687947-868a62a9f521?auto=format&fit=crop&w=2000&q=88",
+          "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=2000&q=88",
+        ],
       },
     ],
   },
@@ -128,6 +165,13 @@ export const DEFAULT_CONTENT = {
     location: "Remote / Worldwide",
     image:
       "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=1400&q=85",
+    galleryHeight: 72,
+    gallery: [
+      "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=2000&q=88",
+      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=2000&q=88",
+      "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=2000&q=88",
+      "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=2000&q=88",
+    ],
   },
 };
 

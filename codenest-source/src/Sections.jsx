@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Mail } from "lucide-react";
 
+function detailHref(id) {
+  const contentHash = window.location.hash.startsWith("#content=") ? window.location.hash : "";
+  return `?detail=${id}${contentHash}`;
+}
+
 function SectionDivider() {
   return (
     <div className="flex items-center gap-2" aria-hidden="true">
@@ -20,14 +25,19 @@ function ProjectCard({ item, index, setCardRef, revealed }) {
       }`}
       data-project-index={index}
     >
-      <div className="relative min-h-[34vh] overflow-hidden bg-black/30">
+      <a
+        className="group/media relative block min-h-[34vh] overflow-hidden bg-black/30"
+        href={detailHref(`project-${index}`)}
+        aria-label={`Open ${item.title} gallery`}
+      >
         <img className="absolute inset-0 h-full w-full object-cover opacity-85" src={item.asset} alt="" />
         <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(7,11,10,0.72),transparent_58%)]" />
         <span className="absolute left-4 top-4 border border-white/20 bg-black/25 px-3 py-2 text-[10px] font-bold uppercase text-white/75 backdrop-blur-md">
           {item.label}
         </span>
         <span className="absolute bottom-4 right-4 font-jakarta text-[11px] font-bold text-[#5ed29c]">{item.index}</span>
-      </div>
+        <ArrowUpRight className="absolute right-4 top-4 text-white/45 transition-[color,transform] group-hover/media:-translate-y-0.5 group-hover/media:translate-x-0.5 group-hover/media:text-[#5ed29c]" size={19} />
+      </a>
 
       <div className="grid gap-6 px-2 pb-3 pt-8 md:grid-cols-[1fr_0.72fr] md:items-end">
         <div>
@@ -153,19 +163,21 @@ export function BlogSection({ content, size }) {
           {content.items.map((item, index) => (
             <article
               key={`${item.category}-${item.title}`}
-              className="group grid gap-5 border-t border-white/12 py-7 md:grid-cols-[90px_1fr_260px_40px] md:items-center"
+              className="border-t border-white/12"
             >
-              <span className="font-jakarta text-[10px] font-bold text-[#5ed29c]">0{index + 1}</span>
-              <div>
-                <p className="text-[10px] font-bold uppercase text-white/40">{item.category} / {item.meta}</p>
-                <h3 className="mt-2 max-w-2xl text-xl font-semibold leading-tight text-white transition-colors group-hover:text-[#5ed29c] md:text-3xl">
-                  {item.title}
-                </h3>
-              </div>
-              <div className="h-28 overflow-hidden bg-black/25 md:h-36">
-                <img className="h-full w-full object-cover opacity-70 transition-[transform,opacity] duration-500 group-hover:scale-105 group-hover:opacity-90" src={item.asset} alt="" />
-              </div>
-              <ArrowUpRight className="text-white/35 transition-colors group-hover:text-[#5ed29c]" size={20} />
+              <a className="group grid gap-5 py-7 md:grid-cols-[90px_1fr_260px_40px] md:items-center" href={detailHref(`blog-${index}`)}>
+                <span className="font-jakarta text-[10px] font-bold text-[#5ed29c]">0{index + 1}</span>
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-white/40">{item.category} / {item.meta}</p>
+                  <h3 className="mt-2 max-w-2xl text-xl font-semibold leading-tight text-white transition-colors group-hover:text-[#5ed29c] md:text-3xl">
+                    {item.title}
+                  </h3>
+                </div>
+                <div className="h-28 overflow-hidden bg-black/25 md:h-36">
+                  <img className="h-full w-full object-cover opacity-70 transition-[transform,opacity] duration-500 group-hover:scale-105 group-hover:opacity-90" src={item.asset} alt="" />
+                </div>
+                <ArrowUpRight className="text-white/35 transition-colors group-hover:text-[#5ed29c]" size={20} />
+              </a>
             </article>
           ))}
           <div className="border-t border-white/12" />
@@ -209,7 +221,7 @@ export function AboutSection({ content, size }) {
       <div className="mx-auto max-w-[1440px]">
         <SectionDivider />
         <div className="grid gap-12 py-16 lg:grid-cols-[0.86fr_1.14fr] lg:gap-24 lg:py-24">
-          <div className="relative min-h-[520px] overflow-hidden bg-black/25 lg:min-h-[680px]">
+          <a className="group relative block min-h-[520px] overflow-hidden bg-black/25 lg:min-h-[680px]" href={detailHref("about")} aria-label="Open personal gallery">
             <img className="absolute inset-0 h-full w-full object-cover opacity-80" src={content.image} alt="" />
             <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(7,11,10,0.8),transparent_55%)]" />
             <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between border-t border-white/20 pt-5">
@@ -219,7 +231,8 @@ export function AboutSection({ content, size }) {
               </div>
               <span className="font-jakarta text-[10px] font-bold text-[#5ed29c]">CODE / CAREER / CRAFT</span>
             </div>
-          </div>
+            <ArrowUpRight className="absolute right-6 top-6 text-white/45 transition-[color,transform] group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#5ed29c]" size={21} />
+          </a>
 
           <div className="flex flex-col justify-between">
             <div>
