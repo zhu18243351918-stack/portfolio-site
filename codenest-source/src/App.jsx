@@ -1,0 +1,612 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ArrowRight,
+  Check,
+  Copy,
+  Image as ImageIcon,
+  LockKeyhole,
+  Menu,
+  RotateCcw,
+  Save,
+  Settings,
+  Upload,
+  Video,
+  X,
+} from "lucide-react";
+import { CONTENT_STORAGE_KEY, DEFAULT_CONTENT } from "./content";
+
+const PASSWORD_HASH = "3090ad7f5b83a40b050aad6e04d2f663049aca5cf0253e1b2ff592fcfed3ef9c";
+const navItems = ["PROJECTS", "BLOG", "ABOUT", "RESUME"];
+
+function mergeContent(value = {}) {
+  return {
+    ...DEFAULT_CONTENT,
+    ...value,
+    card: {
+      ...DEFAULT_CONTENT.card,
+      ...(value.card || {}),
+    },
+  };
+}
+
+function encodeContent(value) {
+  const shareable = {
+    ...value,
+    backgroundImage: value.backgroundImage?.startsWith("data:") ? "" : value.backgroundImage,
+  };
+  const bytes = new TextEncoder().encode(JSON.stringify(shareable));
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+function decodeContent(value) {
+  try {
+    const normalized = value.replaceAll("-", "+").replaceAll("_", "/");
+    const binary = atob(normalized);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    return mergeContent(JSON.parse(new TextDecoder().decode(bytes)));
+  } catch {
+    return null;
+  }
+}
+
+function readInitialContent() {
+  const hashValue = window.location.hash.startsWith("#content=")
+    ? window.location.hash.slice("#content=".length)
+    : "";
+  const sharedContent = hashValue ? decodeContent(hashValue) : null;
+  if (sharedContent) return sharedContent;
+
+  try {
+    return mergeContent(JSON.parse(localStorage.getItem(CONTENT_STORAGE_KEY) || "{}"));
+  } catch {
+    return DEFAULT_CONTENT;
+  }
+}
+
+async function sha256(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function optimizeImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Unable to read this image."));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error("Unable to process this image."));
+      image.onload = () => {
+        const maxWidth = 1920;
+        const maxHeight = 1200;
+        const ratio = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * ratio));
+        canvas.height = Math.max(1, Math.round(image.height * ratio));
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/webp", 0.82));
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function BackgroundMedia({ content }) {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || content.mediaMode !== "video" || !content.videoUrl) return undefined;
+
+    let hls;
+    let cancelled = false;
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = content.videoUrl;
+    } else {
+      import("hls.js").then(({ default: Hls }) => {
+        if (cancelled || !Hls.isSupported()) return;
+        hls = new Hls({ enableWorker: false, lowLatencyMode: false });
+        hls.loadSource(content.videoUrl);
+        hls.attachMedia(video);
+      });
+    }
+
+    const beginPlayback = () => video.play().catch(() => undefined);
+    video.addEventListener("canplay", beginPlayback);
+
+    return () => {
+      cancelled = true;
+      video.removeEventListener("canplay", beginPlayback);
+      hls?.destroy();
+      video.removeAttribute("src");
+      video.load();
+    };
+  }, [content.mediaMode, content.videoUrl]);
+
+  if (content.mediaMode === "image" && content.backgroundImage) {
+    return (
+      <img
+        className="absolute inset-0 h-full w-full object-cover opacity-60"
+        src={content.backgroundImage}
+        alt=""
+        aria-hidden="true"
+      />
+    );
+  }
+
+  return (
+    <video
+      ref={videoRef}
+      className="absolute inset-0 h-full w-full object-cover opacity-60"
+      autoPlay
+      muted
+      loop
+      playsInline
+      aria-hidden="true"
+    />
+  );
+}
+
+function Logo({ brand }) {
+  return (
+    <a className="group flex items-center gap-3 text-white" href="#top" aria-label={`${brand} home`}>
+      <span className="relative grid size-8 place-items-center border border-white/45 font-mono text-[10px] font-bold">
+        C/N
+        <span className="absolute -right-1 -top-1 size-2 bg-[#5ed29c] transition-transform duration-300 group-hover:scale-125" />
+      </span>
+      <span className="text-[15px] font-bold tracking-[0]">{brand}</span>
+    </a>
+  );
+}
+
+function Navigation({ brand, isOpen, onToggle, onClose }) {
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? "hidden" : "";
+    const handleEscape = (event) => event.key === "Escape" && onClose();
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen, onClose]);
+
+  return (
+    <>
+      <header className="absolute inset-x-0 top-0 z-50 border-b border-white/10">
+        <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+          <Logo brand={brand} />
+          <nav className="hidden items-center gap-9 md:flex" aria-label="Primary navigation">
+            {navItems.map((item) => (
+              <a
+                key={item}
+                className="text-[16px] font-semibold text-white transition-colors duration-200 hover:text-[#5ed29c] focus-visible:text-[#5ed29c]"
+                href={`#${item.toLowerCase()}`}
+              >
+                {item}
+              </a>
+            ))}
+          </nav>
+          <button
+            className="grid size-11 place-items-center text-white md:hidden"
+            type="button"
+            aria-label={isOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={isOpen}
+            aria-controls="mobile-menu"
+            onClick={onToggle}
+          >
+            {isOpen ? <X size={25} strokeWidth={1.7} /> : <Menu size={25} strokeWidth={1.7} />}
+          </button>
+        </div>
+      </header>
+
+      <div
+        id="mobile-menu"
+        className={`fixed inset-0 z-40 flex bg-[#070b0a] px-6 pb-12 pt-32 transition-[opacity,visibility] duration-300 md:hidden ${
+          isOpen ? "visible opacity-100" : "invisible opacity-0"
+        }`}
+        aria-hidden={!isOpen}
+      >
+        <nav className="flex w-full flex-col justify-between" aria-label="Mobile navigation">
+          <div className="flex flex-col">
+            {navItems.map((item, index) => (
+              <a
+                key={item}
+                className="flex items-center justify-between border-b border-white/10 py-5 text-3xl font-extrabold text-white transition-colors hover:text-[#5ed29c]"
+                href={`#${item.toLowerCase()}`}
+                onClick={onClose}
+              >
+                {item}
+                <span className="font-jakarta text-[10px] text-[#5ed29c]">0{index + 1}</span>
+              </a>
+            ))}
+          </div>
+          <p className="max-w-64 text-xs leading-5 text-white/50">
+            Build the skills. Ship the work. Start the career.
+          </p>
+        </nav>
+      </div>
+    </>
+  );
+}
+
+function CentralGlow() {
+  return (
+    <svg
+      className="pointer-events-none absolute left-1/2 top-[7%] h-[220px] w-[min(980px,90vw)] -translate-x-1/2 opacity-75"
+      viewBox="0 0 980 220"
+      fill="none"
+      aria-hidden="true"
+    >
+      <defs>
+        <filter id="cyan-glow" x="-20%" y="-100%" width="140%" height="300%">
+          <feGaussianBlur stdDeviation="25" />
+        </filter>
+      </defs>
+      <ellipse
+        cx="490"
+        cy="105"
+        rx="360"
+        ry="40"
+        fill="#1a8069"
+        fillOpacity="0.52"
+        filter="url(#cyan-glow)"
+      />
+    </svg>
+  );
+}
+
+function GridLines() {
+  return (
+    <div className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden="true">
+      {[25, 50, 75].map((position) => (
+        <span
+          key={position}
+          className="absolute inset-y-0 w-px bg-white/10"
+          style={{ left: `${position}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function GlassCard({ content }) {
+  return (
+    <aside className="liquid-card h-[200px] w-[200px] translate-y-[-50px] p-5 text-white">
+      <div className="flex h-full flex-col justify-between">
+        <span className="font-jakarta text-[14px] font-bold text-white/75">{content.year}</span>
+        <div>
+          <h2 className="max-w-[155px] text-[18px] font-semibold leading-[1.08] tracking-[0]">
+            {content.lead}{" "}
+            <span className="font-instrument text-[21px] font-normal italic">{content.accent}</span>{" "}
+            {content.tail}
+          </h2>
+          <p className="mt-3 text-[11px] leading-[1.45] text-white/55">{content.description}</p>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function Field({ label, value, onChange, multiline = false }) {
+  const className =
+    "mt-2 w-full border border-white/15 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-white/25 focus:border-[#5ed29c]";
+  return (
+    <label className="block text-[11px] font-bold uppercase text-white/55">
+      {label}
+      {multiline ? (
+        <textarea className={`${className} min-h-20 resize-y`} value={value} onChange={onChange} />
+      ) : (
+        <input className={className} value={value} onChange={onChange} />
+      )}
+    </label>
+  );
+}
+
+function ContentEditor({ content, onSave, onReset }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [draft, setDraft] = useState(content);
+
+  useEffect(() => setDraft(content), [content]);
+
+  const closeEditor = useCallback(() => {
+    setIsOpen(false);
+    setPassword("");
+    setError("");
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    document.body.style.overflow = "hidden";
+    const handleEscape = (event) => event.key === "Escape" && closeEditor();
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [closeEditor, isOpen]);
+
+  const unlock = async (event) => {
+    event.preventDefault();
+    if ((await sha256(password)) === PASSWORD_HASH) {
+      setIsUnlocked(true);
+      setError("");
+      setPassword("");
+      return;
+    }
+    setError("Password is incorrect.");
+  };
+
+  const update = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
+  const updateCard = (key, value) =>
+    setDraft((current) => ({ ...current, card: { ...current.card, [key]: value } }));
+
+  const handleImage = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 12 * 1024 * 1024) {
+      setNotice("Please choose an image smaller than 12 MB.");
+      return;
+    }
+    try {
+      const image = await optimizeImage(file);
+      setDraft((current) => ({ ...current, mediaMode: "image", backgroundImage: image }));
+      setNotice("Image compressed and stored in this browser.");
+    } catch (imageError) {
+      setNotice(imageError.message);
+    }
+  };
+
+  const save = () => {
+    const result = onSave(draft);
+    setNotice(result);
+  };
+
+  const copyLink = async () => {
+    const encoded = encodeContent(draft);
+    const url = `${window.location.origin}${window.location.pathname}#content=${encoded}`;
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+
+  return (
+    <>
+      <button
+        className="fixed bottom-5 right-5 z-30 grid size-12 place-items-center border border-white/20 bg-[#070b0a]/80 text-white shadow-2xl backdrop-blur-md transition-colors hover:border-[#5ed29c] hover:text-[#5ed29c]"
+        type="button"
+        title="Edit content"
+        aria-label="Edit page content"
+        onClick={() => setIsOpen(true)}
+      >
+        <Settings size={19} />
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/75 p-3 backdrop-blur-sm sm:p-5">
+          <section className="ml-auto flex h-full w-full max-w-[440px] flex-col overflow-hidden border border-white/15 bg-[#0a0f0d] text-white shadow-2xl">
+            <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
+              <div className="flex items-center gap-3">
+                <Settings size={17} className="text-[#5ed29c]" />
+                <div>
+                  <p className="text-sm font-bold">Content editor</p>
+                  <p className="text-[10px] text-white/45">CodeNest hero</p>
+                </div>
+              </div>
+              <button className="grid size-10 place-items-center" type="button" aria-label="Close editor" onClick={closeEditor}>
+                <X size={20} />
+              </button>
+            </header>
+
+            {!isUnlocked ? (
+              <form className="flex flex-1 flex-col justify-center p-6" onSubmit={unlock}>
+                <LockKeyhole size={28} className="text-[#5ed29c]" />
+                <h2 className="mt-5 text-2xl font-extrabold">Unlock editing</h2>
+                <p className="mt-2 max-w-xs text-sm leading-6 text-white/55">
+                  Enter the replacement password to update text and background media.
+                </p>
+                <label className="mt-7 text-[11px] font-bold uppercase text-white/55">
+                  Password
+                  <input
+                    className="mt-2 w-full border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#5ed29c]"
+                    type="password"
+                    autoFocus
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                  />
+                </label>
+                {error && <p className="mt-3 text-xs text-red-300">{error}</p>}
+                <button className="mt-5 min-h-12 bg-[#5ed29c] text-xs font-bold uppercase text-[#070b0a]" type="submit">
+                  Unlock editor
+                </button>
+              </form>
+            ) : (
+              <>
+                <div className="flex-1 space-y-5 overflow-y-auto p-5">
+                  <div className="grid grid-cols-2 gap-2" aria-label="Background type">
+                    <button
+                      className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
+                        draft.mediaMode === "video"
+                          ? "border-[#5ed29c] bg-[#5ed29c] text-[#070b0a]"
+                          : "border-white/15 text-white/65"
+                      }`}
+                      type="button"
+                      onClick={() => update("mediaMode", "video")}
+                    >
+                      <Video size={15} /> Video
+                    </button>
+                    <button
+                      className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
+                        draft.mediaMode === "image"
+                          ? "border-[#5ed29c] bg-[#5ed29c] text-[#070b0a]"
+                          : "border-white/15 text-white/65"
+                      }`}
+                      type="button"
+                      onClick={() => update("mediaMode", "image")}
+                    >
+                      <ImageIcon size={15} /> Image
+                    </button>
+                  </div>
+
+                  {draft.mediaMode === "video" ? (
+                    <Field label="HLS video URL" value={draft.videoUrl} onChange={(event) => update("videoUrl", event.target.value)} />
+                  ) : (
+                    <>
+                      <Field
+                        label="Background image URL"
+                        value={draft.backgroundImage?.startsWith("data:") ? "" : draft.backgroundImage}
+                        onChange={(event) => update("backgroundImage", event.target.value)}
+                      />
+                      <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 border border-dashed border-white/25 text-xs font-bold text-white/70 hover:border-[#5ed29c] hover:text-[#5ed29c]">
+                        <Upload size={15} /> Upload local image
+                        <input className="sr-only" type="file" accept="image/*" onChange={handleImage} />
+                      </label>
+                    </>
+                  )}
+
+                  <div className="h-px bg-white/10" />
+                  <Field label="Brand" value={draft.brand} onChange={(event) => update("brand", event.target.value)} />
+                  <Field label="Eyebrow" value={draft.eyebrow} onChange={(event) => update("eyebrow", event.target.value)} />
+                  <Field label="Headline" value={draft.headline} onChange={(event) => update("headline", event.target.value)} />
+                  <Field
+                    label="Description"
+                    value={draft.description}
+                    multiline
+                    onChange={(event) => update("description", event.target.value)}
+                  />
+                  <Field label="CTA label" value={draft.ctaLabel} onChange={(event) => update("ctaLabel", event.target.value)} />
+
+                  <div className="h-px bg-white/10" />
+                  <p className="text-[11px] font-bold uppercase text-[#5ed29c]">Glass card</p>
+                  <Field label="Year tag" value={draft.card.year} onChange={(event) => updateCard("year", event.target.value)} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Lead" value={draft.card.lead} onChange={(event) => updateCard("lead", event.target.value)} />
+                    <Field label="Serif word" value={draft.card.accent} onChange={(event) => updateCard("accent", event.target.value)} />
+                  </div>
+                  <Field label="Tail" value={draft.card.tail} onChange={(event) => updateCard("tail", event.target.value)} />
+                  <Field
+                    label="Card description"
+                    value={draft.card.description}
+                    multiline
+                    onChange={(event) => updateCard("description", event.target.value)}
+                  />
+
+                  {notice && <p className="border-l-2 border-[#5ed29c] pl-3 text-xs leading-5 text-white/60">{notice}</p>}
+                </div>
+
+                <footer className="grid shrink-0 grid-cols-[auto_1fr] gap-2 border-t border-white/10 p-4">
+                  <button
+                    className="grid size-11 place-items-center border border-white/15 text-white/65 hover:text-white"
+                    type="button"
+                    title="Reset content"
+                    onClick={() => {
+                      const resetValue = onReset();
+                      setDraft(resetValue);
+                      setNotice("Default content restored.");
+                    }}
+                  >
+                    <RotateCcw size={16} />
+                  </button>
+                  <button
+                    className="flex min-h-11 items-center justify-center gap-2 bg-[#5ed29c] text-xs font-bold uppercase text-[#070b0a]"
+                    type="button"
+                    onClick={save}
+                  >
+                    <Save size={16} /> Save changes
+                  </button>
+                  <button
+                    className="col-span-2 flex min-h-11 items-center justify-center gap-2 border border-white/15 text-xs font-bold uppercase text-white/70 hover:border-[#5ed29c] hover:text-[#5ed29c]"
+                    type="button"
+                    onClick={copyLink}
+                  >
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                    {copied ? "Link copied" : "Copy shareable text link"}
+                  </button>
+                </footer>
+              </>
+            )}
+          </section>
+        </div>
+      )}
+    </>
+  );
+}
+
+function App() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [content, setContent] = useState(readInitialContent);
+
+  const saveContent = (nextContent) => {
+    const merged = mergeContent(nextContent);
+    setContent(merged);
+    try {
+      localStorage.setItem(CONTENT_STORAGE_KEY, JSON.stringify(merged));
+      window.history.replaceState(null, "", `${window.location.pathname}#content=${encodeContent(merged)}`);
+      return merged.backgroundImage?.startsWith("data:")
+        ? "Saved locally. The uploaded image stays in this browser; use an image URL for a fully shareable link."
+        : "Saved. Text and URL changes are now included in the shareable link.";
+    } catch {
+      return "Preview updated, but browser storage is full. Use a smaller image or an image URL.";
+    }
+  };
+
+  const resetContent = () => {
+    localStorage.removeItem(CONTENT_STORAGE_KEY);
+    window.history.replaceState(null, "", window.location.pathname);
+    setContent(DEFAULT_CONTENT);
+    return DEFAULT_CONTENT;
+  };
+
+  return (
+    <main id="top" className="relative min-h-[100dvh] overflow-hidden bg-[#070b0a] text-white">
+      <BackgroundMedia content={content} />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,#070b0a_0%,rgba(7,11,10,0.88)_28%,rgba(7,11,10,0.18)_72%,transparent_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(0deg,#070b0a_0%,rgba(7,11,10,0.72)_18%,transparent_58%)]" />
+      <div className="absolute inset-0 bg-black/10" />
+      <CentralGlow />
+      <GridLines />
+
+      <Navigation
+        brand={content.brand}
+        isOpen={isMenuOpen}
+        onToggle={() => setIsMenuOpen((current) => !current)}
+        onClose={() => setIsMenuOpen(false)}
+      />
+
+      <section className="relative z-10 mx-auto flex min-h-[100dvh] max-w-[1440px] items-end px-5 pb-10 pt-40 sm:px-8 sm:pb-14 lg:px-12 lg:pb-16">
+        <div className="w-full max-w-[860px]">
+          <GlassCard content={content.card} />
+          <div className="-mt-8 border-l border-white/20 pl-5 sm:pl-7">
+            <p className="font-jakarta text-[11px] font-bold uppercase tracking-[0] text-[#5ed29c]">{content.eyebrow}</p>
+            <h1 className="mt-4 text-[40px] font-extrabold uppercase leading-[0.94] tracking-[0] text-white sm:text-[54px] lg:text-[72px]">
+              {content.headline}<span className="text-[#5ed29c]">.</span>
+            </h1>
+            <p className="mt-5 max-w-lg text-[14px] leading-6 text-white/70">{content.description}</p>
+            <a
+              className="group mt-7 inline-flex min-h-12 items-center gap-3 rounded-full bg-[#5ed29c] px-6 text-[12px] font-bold uppercase text-[#070b0a] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-[#72e1ad] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#5ed29c]"
+              href="#projects"
+            >
+              {content.ctaLabel}
+              <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" size={17} />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <ContentEditor content={content} onSave={saveContent} onReset={resetContent} />
+    </main>
+  );
+}
+
+export default App;
