@@ -29,7 +29,12 @@ import {
   uploadPortfolioImage,
 } from "./supabase";
 
-const navItems = ["PROJECTS", "BLOG", "ABOUT", "RESUME"];
+const navTargets = [
+  { key: "projects", href: "#projects" },
+  { key: "blog", href: "#blog" },
+  { key: "about", href: "#about" },
+  { key: "resume", href: "#resume" },
+];
 const CONTENT_DB_NAME = "codenest-editor";
 const CONTENT_STORE_NAME = "content";
 const CONTENT_RECORD_KEY = "current";
@@ -44,6 +49,10 @@ function mergeContent(value = {}) {
     card: {
       ...DEFAULT_CONTENT.card,
       ...(value.card || {}),
+    },
+    navigation: {
+      ...DEFAULT_CONTENT.navigation,
+      ...(value.navigation || {}),
     },
     sectionSizes: {
       ...DEFAULT_CONTENT.sectionSizes,
@@ -276,7 +285,12 @@ function Logo({ brand, logoImage }) {
   );
 }
 
-function Navigation({ brand, logoImage, isOpen, onToggle, onClose }) {
+function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose }) {
+  const items = navTargets.map((item) => ({
+    ...item,
+    label: navigation?.[item.key]?.trim() || DEFAULT_CONTENT.navigation[item.key],
+  }));
+
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     const handleEscape = (event) => event.key === "Escape" && onClose();
@@ -293,13 +307,14 @@ function Navigation({ brand, logoImage, isOpen, onToggle, onClose }) {
         <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
           <Logo brand={brand} logoImage={logoImage} />
           <nav className="hidden items-center gap-9 md:flex" aria-label="Primary navigation">
-            {navItems.map((item) => (
+            {items.map((item) => (
               <a
-                key={item}
-                className="text-[16px] font-semibold text-white transition-colors duration-200 hover:text-[#5ed29c] focus-visible:text-[#5ed29c]"
-                href={`#${item.toLowerCase()}`}
+                key={item.key}
+                className="max-w-36 truncate text-[16px] font-semibold text-white transition-colors duration-200 hover:text-[#5ed29c] focus-visible:text-[#5ed29c]"
+                href={item.href}
+                title={item.label}
               >
-                {item}
+                {item.label}
               </a>
             ))}
           </nav>
@@ -325,14 +340,14 @@ function Navigation({ brand, logoImage, isOpen, onToggle, onClose }) {
       >
         <nav className="flex w-full flex-col justify-between" aria-label="Mobile navigation">
           <div className="flex flex-col">
-            {navItems.map((item, index) => (
+            {items.map((item, index) => (
               <a
-                key={item}
+                key={item.key}
                 className="flex items-center justify-between border-b border-white/10 py-5 text-3xl font-extrabold text-white transition-colors hover:text-[#5ed29c]"
-                href={`#${item.toLowerCase()}`}
+                href={item.href}
                 onClick={onClose}
               >
-                {item}
+                <span className="min-w-0 break-words pr-4">{item.label}</span>
                 <span className="font-jakarta text-[10px] text-[#5ed29c]">0{index + 1}</span>
               </a>
             ))}
@@ -729,7 +744,39 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
             ) : (
               <>
                 <div className="flex-1 space-y-4 overflow-y-auto p-5">
-                  <EditorGroup title="Hero section" open>
+                  <EditorGroup title="Site & navigation" open>
+                    <Field label="Brand" value={draft.brand} onChange={(event) => update("brand", event.target.value)} />
+                    <Field
+                      label="Logo image URL"
+                      value={draft.logoImage?.startsWith("data:") ? "" : draft.logoImage}
+                      onChange={(event) => update("logoImage", event.target.value)}
+                    />
+                    <UploadButton label="Upload logo" disabled={isUploading} onChange={handleLogoImage} />
+                    <div className="h-px bg-white/10" />
+                    <p className="text-[10px] font-bold uppercase text-white/35">Menu labels</p>
+                    <Field
+                      label="Projects label"
+                      value={draft.navigation.projects}
+                      onChange={(event) => updateSection("navigation", "projects", event.target.value)}
+                    />
+                    <Field
+                      label="Blog label"
+                      value={draft.navigation.blog}
+                      onChange={(event) => updateSection("navigation", "blog", event.target.value)}
+                    />
+                    <Field
+                      label="About label"
+                      value={draft.navigation.about}
+                      onChange={(event) => updateSection("navigation", "about", event.target.value)}
+                    />
+                    <Field
+                      label="Resume label"
+                      value={draft.navigation.resume}
+                      onChange={(event) => updateSection("navigation", "resume", event.target.value)}
+                    />
+                  </EditorGroup>
+
+                  <EditorGroup title="Hero section">
                     <div className="grid grid-cols-2 gap-2" aria-label="Background type">
                       <button
                         className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
@@ -768,13 +815,6 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                       </>
                     )}
 
-                    <Field label="Brand" value={draft.brand} onChange={(event) => update("brand", event.target.value)} />
-                    <Field
-                      label="Logo image URL"
-                      value={draft.logoImage?.startsWith("data:") ? "" : draft.logoImage}
-                      onChange={(event) => update("logoImage", event.target.value)}
-                    />
-                    <UploadButton label="Upload logo" disabled={isUploading} onChange={handleLogoImage} />
                     <Field label="Eyebrow" value={draft.eyebrow} onChange={(event) => update("eyebrow", event.target.value)} />
                     <Field label="Headline" value={draft.headline} onChange={(event) => update("headline", event.target.value)} />
                     <Field label="Description" value={draft.description} multiline onChange={(event) => update("description", event.target.value)} />
@@ -1242,6 +1282,7 @@ function App() {
         <Navigation
           brand={content.brand}
           logoImage={content.logoImage}
+          navigation={content.navigation}
           isOpen={isMenuOpen}
           onToggle={() => setIsMenuOpen((current) => !current)}
           onClose={() => setIsMenuOpen(false)}

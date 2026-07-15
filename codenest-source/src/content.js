@@ -1,6 +1,12 @@
 export const DEFAULT_CONTENT = {
   brand: "CodeNest",
   logoImage: "",
+  navigation: {
+    projects: "PROJECTS",
+    blog: "BLOG",
+    about: "ABOUT",
+    resume: "RESUME",
+  },
   eyebrow: "Career-Ready Curriculum",
   headline: "Launch your coding career",
   description:
