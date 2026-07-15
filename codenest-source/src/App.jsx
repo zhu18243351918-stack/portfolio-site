@@ -19,6 +19,7 @@ import {
 import { CONTENT_STORAGE_KEY, DEFAULT_CONTENT } from "./content";
 import { AboutSection, BlogSection, ProjectsSection, ResumeSection } from "./Sections";
 import DetailPage from "./DetailPage";
+import { consumeHomeScrollPosition } from "./scrollPosition";
 import {
   fetchRemoteContent,
   getAdminSession,
@@ -1113,47 +1114,53 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
 }
 
 function App() {
+  const detailId = new URLSearchParams(window.location.search).get("detail");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [content, setContent] = useState(readInitialContent);
   const [session, setSession] = useState(null);
   const [cloudStatus, setCloudStatus] = useState("connecting");
+  const [isContentReady, setIsContentReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const hydrateContent = async () => {
-      const hashValue = window.location.hash.startsWith("#content=")
-        ? window.location.hash.slice("#content=".length)
-        : "";
-      const sharedContent = hashValue ? decodeContent(hashValue) : null;
+      try {
+        const hashValue = window.location.hash.startsWith("#content=")
+          ? window.location.hash.slice("#content=".length)
+          : "";
+        const sharedContent = hashValue ? decodeContent(hashValue) : null;
 
-      if (sharedContent) {
-        await writePersistentContent(sharedContent).catch(() => undefined);
+        if (sharedContent) {
+          await writePersistentContent(sharedContent).catch(() => undefined);
+          try {
+            await fetchRemoteContent();
+            if (!cancelled) setCloudStatus("online");
+          } catch {
+            if (!cancelled) setCloudStatus("offline");
+          }
+          return;
+        }
+
         try {
-          await fetchRemoteContent();
+          const remoteContent = await fetchRemoteContent();
+          if (remoteContent && !cancelled) {
+            const merged = mergeContent(remoteContent);
+            setContent(merged);
+            localStorage.setItem(CONTENT_STORAGE_KEY, JSON.stringify(stripLocalImages(merged)));
+            await writePersistentContent(merged).catch(() => undefined);
+            if (!cancelled) setCloudStatus("online");
+            return;
+          }
           if (!cancelled) setCloudStatus("online");
         } catch {
           if (!cancelled) setCloudStatus("offline");
         }
-        return;
-      }
 
-      try {
-        const remoteContent = await fetchRemoteContent();
-        if (remoteContent && !cancelled) {
-          const merged = mergeContent(remoteContent);
-          setContent(merged);
-          localStorage.setItem(CONTENT_STORAGE_KEY, JSON.stringify(stripLocalImages(merged)));
-          await writePersistentContent(merged).catch(() => undefined);
-          if (!cancelled) setCloudStatus("online");
-          return;
-        }
-        if (!cancelled) setCloudStatus("online");
-      } catch {
-        if (!cancelled) setCloudStatus("offline");
+        const savedContent = await readPersistentContent().catch(() => null);
+        if (!cancelled && savedContent) setContent(mergeContent(savedContent));
+      } finally {
+        if (!cancelled) setIsContentReady(true);
       }
-
-      const savedContent = await readPersistentContent().catch(() => null);
-      if (!cancelled && savedContent) setContent(mergeContent(savedContent));
     };
 
     hydrateContent();
@@ -1162,6 +1169,30 @@ function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (detailId || !isContentReady) return undefined;
+
+    const savedPosition = consumeHomeScrollPosition();
+    if (savedPosition === null) return undefined;
+
+    let secondFrame;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        const root = document.documentElement;
+        const previousBehavior = root.style.scrollBehavior;
+        const maximumScroll = Math.max(0, root.scrollHeight - window.innerHeight);
+        root.style.scrollBehavior = "auto";
+        window.scrollTo(0, Math.min(savedPosition, maximumScroll));
+        root.style.scrollBehavior = previousBehavior;
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [detailId, isContentReady]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1248,8 +1279,6 @@ function App() {
     setContent(DEFAULT_CONTENT);
     return DEFAULT_CONTENT;
   };
-
-  const detailId = new URLSearchParams(window.location.search).get("detail");
 
   if (detailId) {
     return (
