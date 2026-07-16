@@ -33,8 +33,8 @@ import {
 const navTargets = [
   { key: "projects", href: "#projects" },
   { key: "blog", href: "#blog" },
-  { key: "about", href: "#about" },
   { key: "resume", href: "#resume" },
+  { key: "about", href: "#about" },
 ];
 const CONTENT_DB_NAME = "codenest-editor";
 const CONTENT_STORE_NAME = "content";
@@ -766,14 +766,14 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                       onChange={(event) => updateSection("navigation", "blog", event.target.value)}
                     />
                     <Field
-                      label="About label"
-                      value={draft.navigation.about}
-                      onChange={(event) => updateSection("navigation", "about", event.target.value)}
-                    />
-                    <Field
                       label="Resume label"
                       value={draft.navigation.resume}
                       onChange={(event) => updateSection("navigation", "resume", event.target.value)}
+                    />
+                    <Field
+                      label="About label"
+                      value={draft.navigation.about}
+                      onChange={(event) => updateSection("navigation", "about", event.target.value)}
                     />
                   </EditorGroup>
 
