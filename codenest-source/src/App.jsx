@@ -1712,7 +1712,7 @@ function App() {
               <span className="text-[10px] font-bold uppercase text-white/46">Shanghai · Available 2026</span>
             </div>
 
-            <h1 className="display-editorial mt-7 max-w-[13ch] text-[56px] leading-[0.84] text-[#f1efe4] sm:text-[82px] lg:text-[118px] xl:text-[150px] 2xl:text-[164px]">
+            <h1 className="display-editorial mt-7 max-w-[13ch] text-[56px] leading-[1.02] text-[#f1efe4] sm:text-[82px] sm:leading-[0.9] lg:text-[118px] lg:leading-[0.84] xl:text-[150px] 2xl:text-[164px]">
               {content.headline.trim().split(/\s+/).map((word, index, words) => (
                 <span key={`${word}-${index}`}>
                   <span className="hero-word-mask">
