@@ -105,53 +105,54 @@ textarea:focus-visible {
   mask-image: linear-gradient(180deg, transparent, #000 18%, #000 76%, transparent);
 }
 
-.opening-curtain {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: none;
-  align-items: end;
+.hero-scene-media {
   overflow: hidden;
-  padding: 32px 20px;
   background: #050607;
-  color: #efede1;
 }
 
-.opening-lockup {
-  width: 100%;
-  max-width: 1700px;
-  margin-inline: auto;
+.hero-scene-video {
+  opacity: 0;
+  filter: saturate(0.88) contrast(1.04);
+  transform: scale(1.035);
+  transition: opacity 1000ms ease-in-out;
+  will-change: opacity, transform;
 }
 
-.opening-mark {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  padding-bottom: 18px;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.4;
-  text-transform: uppercase;
+.hero-scene-video.is-active {
+  opacity: 0.82;
+  animation: hero-scene-drift 14s ease-in-out infinite alternate;
 }
 
-.opening-mark span:first-child {
-  font-size: clamp(26px, 4vw, 58px);
-  line-height: 0.9;
-  text-transform: none;
+.hero-scene-overlay {
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.72;
+  transform: scale(1.03);
+  animation: train-bob 3s ease-in-out infinite;
+  will-change: transform;
 }
 
-.opening-mark span:last-child {
-  max-width: 20ch;
-  color: rgb(239 237 225 / 0.48);
-  text-align: right;
+.hero-scene-switcher {
+  min-width: min(100%, 330px);
 }
 
-.opening-rule {
-  display: block;
-  width: 100%;
-  height: 2px;
-  background: var(--signal);
+@keyframes train-bob {
+  0%,
+  100% {
+    transform: translateY(0) scale(1.03);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.03);
+  }
+}
+
+@keyframes hero-scene-drift {
+  from {
+    transform: scale(1.035) translate3d(-0.4%, 0, 0);
+  }
+  to {
+    transform: scale(1.085) translate3d(0.4%, -0.4%, 0);
+  }
 }
 
 .hero-word-mask {
@@ -291,18 +292,12 @@ textarea:focus-visible {
 }
 
 @media (max-width: 767px) {
-  .opening-curtain {
-    padding: 24px 20px;
+  .hero-scene-video.is-active {
+    opacity: 0.74;
   }
 
-  .opening-mark {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .opening-mark span:last-child {
-    text-align: left;
+  .hero-scene-overlay {
+    opacity: 0.58;
   }
 
   .hero-grid {
@@ -333,10 +328,6 @@ textarea:focus-visible {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-  }
-
-  .opening-curtain {
-    display: none !important;
   }
 
   .hero-word,

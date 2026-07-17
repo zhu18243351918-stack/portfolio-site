@@ -45,6 +45,29 @@ const CONTENT_STORE_NAME = "content";
 const CONTENT_RECORD_KEY = "current";
 const GALAXY_FOCAL = [0.68, 0.44];
 const GALAXY_ROTATION = [0.96, 0.18];
+const LEGACY_HERO_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_170732_8a9ccda6-5cff-4628-b164-059c500a2b41.mp4";
+const HERO_SCENES = [
+  {
+    label: "Golden Hour",
+    shortLabel: "Golden",
+    source: "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260702_081127_0992a171-d3c6-4978-8213-0ec5df8b6d63.mp4",
+  },
+  {
+    label: "Still Water",
+    shortLabel: "Water",
+    source: "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260702_092026_dd05b805-ea0f-40b2-8c52-332b88502592.mp4",
+  },
+  {
+    label: "Deep Woods",
+    shortLabel: "Woods",
+    source: "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260702_081042_df7202bf-bd80-4b2b-bbc6-1f09ba2870e9.mp4",
+  },
+  {
+    label: "Quiet Dawn",
+    shortLabel: "Dawn",
+    source: "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260702_080959_4cac5234-3573-464e-a5b7-76b94b8a7d61.mp4",
+  },
+];
 
 const LEGACY_PROJECT_TITLES = [
   "Ship a production-ready product",
@@ -463,6 +486,73 @@ function BackgroundMedia({ content }) {
         rotationSpeed={0.018}
         disableAnimation={reducedMotion}
         transparent={false}
+      />
+    </div>
+  );
+}
+
+function HeroSceneBackground({ content, activeScene }) {
+  const reducedMotion = useReducedMotion();
+  const videoRefs = useRef([]);
+  const hasSceneMode = content.mediaMode === "video" && !content.videoUrl?.includes(".m3u8");
+  const firstSource = content.videoUrl && content.videoUrl !== LEGACY_HERO_VIDEO_URL
+    ? content.videoUrl
+    : HERO_SCENES[0].source;
+  const scenes = HERO_SCENES.map((scene, index) => (index === 0 ? { ...scene, source: firstSource } : scene));
+
+  useEffect(() => {
+    if (!hasSceneMode || reducedMotion) return undefined;
+    const activeVideo = videoRefs.current[activeScene];
+    activeVideo?.play().catch(() => undefined);
+
+    const pauseTimer = window.setTimeout(() => {
+      videoRefs.current.forEach((video, index) => {
+        if (video && index !== activeScene) video.pause();
+      });
+    }, 1050);
+
+    return () => window.clearTimeout(pauseTimer);
+  }, [activeScene, hasSceneMode, reducedMotion]);
+
+  if (!hasSceneMode) {
+    return (
+      <div data-hero-media className="absolute inset-0 opacity-60">
+        <BackgroundMedia content={content} />
+      </div>
+    );
+  }
+
+  if (reducedMotion) {
+    return (
+      <div data-hero-media className="absolute inset-0">
+        <img className="h-full w-full object-cover opacity-75" src={content.backgroundImage || DEFAULT_CONTENT.backgroundImage} alt="" aria-hidden="true" />
+        <img className="hero-scene-overlay absolute inset-0 h-full w-full object-cover" src="./portfolio/hero-scene-overlay.png" alt="" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  return (
+    <div data-hero-media className="hero-scene-media absolute inset-0">
+      {scenes.map((scene, index) => (
+        <video
+          key={scene.source}
+          ref={(node) => { videoRefs.current[index] = node; }}
+          className={`hero-scene-video absolute inset-0 h-full w-full object-cover ${activeScene === index ? "is-active" : ""}`}
+          src={scene.source}
+          poster={content.backgroundImage || DEFAULT_CONTENT.backgroundImage}
+          preload={index === activeScene ? "auto" : "metadata"}
+          autoPlay={index === 0}
+          muted
+          loop
+          playsInline
+          aria-hidden="true"
+        />
+      ))}
+      <img
+        className="hero-scene-overlay absolute inset-0 h-full w-full object-cover"
+        src="./portfolio/hero-scene-overlay.png"
+        alt=""
+        aria-hidden="true"
       />
     </div>
   );
@@ -1295,12 +1385,33 @@ function App() {
   const detailId = new URLSearchParams(window.location.search).get("detail");
   const pageRef = useRef(null);
   const playOpeningRef = useRef(shouldPlayOpening());
+  const sceneTransitionTimerRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeHeroScene, setActiveHeroScene] = useState(0);
+  const [isSceneTransitioning, setIsSceneTransitioning] = useState(false);
   const [content, setContent] = useState(readInitialContent);
   const [session, setSession] = useState(null);
   const [cloudStatus, setCloudStatus] = useState("connecting");
   const [isContentReady, setIsContentReady] = useState(false);
   const openEditor = () => window.dispatchEvent(new Event("codenest:open-editor"));
+
+  const changeHeroScene = useCallback((nextScene) => {
+    if (nextScene === activeHeroScene || isSceneTransitioning) return;
+    setIsSceneTransitioning(true);
+    setActiveHeroScene(nextScene);
+    window.clearTimeout(sceneTransitionTimerRef.current);
+    sceneTransitionTimerRef.current = window.setTimeout(() => setIsSceneTransitioning(false), 1000);
+  }, [activeHeroScene, isSceneTransitioning]);
+
+  useEffect(() => {
+    if (detailId || content.mediaMode !== "video" || content.videoUrl?.includes(".m3u8")) return undefined;
+    const autoSwitchTimer = window.setTimeout(() => {
+      changeHeroScene((activeHeroScene + 1) % HERO_SCENES.length);
+    }, 8500);
+    return () => window.clearTimeout(autoSwitchTimer);
+  }, [activeHeroScene, changeHeroScene, content.mediaMode, content.videoUrl, detailId]);
+
+  useEffect(() => () => window.clearTimeout(sceneTransitionTimerRef.current), []);
 
   useLayoutEffect(() => {
     if (detailId) return undefined;
@@ -1495,20 +1606,8 @@ function App() {
     <>
       <TargetCursor />
       <main ref={pageRef} id="top" className="min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]">
-      <div data-opening className="opening-curtain" aria-hidden="true">
-        <div className="opening-lockup">
-          <div data-opening-mark className="opening-mark">
-            <span>Anthony</span>
-            <span>Visual / AI / Brand Designer</span>
-          </div>
-          <span data-opening-rule className="opening-rule" />
-        </div>
-      </div>
-
       <section data-hero className="relative min-h-[100dvh] overflow-hidden bg-[#08090b]">
-        <div data-hero-media className="absolute inset-0 opacity-60">
-          <BackgroundMedia content={content} />
-        </div>
+        <HeroSceneBackground content={content} activeScene={activeHeroScene} />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,6,8,0.92)_0%,rgba(5,6,8,0.42)_52%,rgba(5,6,8,0.66)_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.2)_0%,rgba(5,6,8,0.12)_40%,rgba(5,6,8,0.94)_100%)]" />
         <div className="noise-overlay absolute inset-0 opacity-35" aria-hidden="true" />
@@ -1562,7 +1661,27 @@ function App() {
             <div data-hero-foot className="mt-10 grid gap-5 border-t border-white/16 pt-6 text-[10px] font-bold uppercase text-white/38 sm:grid-cols-3 lg:mt-14">
               <span>{content.card.year}</span>
               <span className="sm:text-center">{content.about.role}</span>
-              <span className="sm:text-right">Selected work / Brand systems</span>
+              {content.mediaMode === "video" && !content.videoUrl?.includes(".m3u8") ? (
+                <div className="hero-scene-switcher grid grid-cols-4 gap-1 sm:justify-self-end" aria-label="Hero scenes">
+                  {HERO_SCENES.map((scene, index) => (
+                    <button
+                      key={scene.label}
+                      className={`cursor-target min-h-7 border-b px-1 text-[8px] font-bold uppercase transition-colors duration-500 sm:px-2 sm:text-[9px] ${
+                        activeHeroScene === index ? "border-[#e5ff48] text-white" : "border-transparent text-white/34 hover:text-white/72"
+                      }`}
+                      type="button"
+                      aria-label={`Show ${scene.label} scene`}
+                      aria-pressed={activeHeroScene === index}
+                      onClick={() => changeHeroScene(index)}
+                    >
+                      <span className="sm:hidden">{scene.shortLabel}</span>
+                      <span className="hidden sm:inline">{scene.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <span className="sm:text-right">Selected work / Brand systems</span>
+              )}
             </div>
           </div>
         </div>

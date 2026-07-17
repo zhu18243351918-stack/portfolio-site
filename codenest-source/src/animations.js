@@ -3,7 +3,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const OPENING_STORAGE_KEY = "anthony-portfolio-opening-v2";
+const OPENING_STORAGE_KEY = "anthony-portfolio-opening-v3";
 const PREMIUM_EASE = "expo.out";
 
 export function shouldPlayOpening() {
@@ -47,8 +47,34 @@ function createHeroOpening(root, playOpening) {
   const heroCtas = root.querySelector("[data-hero-cta]");
   const heroFoot = root.querySelector("[data-hero-foot]");
 
-  if (!playOpening || !opening) {
+  if (!playOpening) {
     setMotionComplete(root);
+    return null;
+  }
+
+  if (!opening) {
+    rememberOpening();
+    gsap.set(heroMedia, { scale: 1.065, transformOrigin: "50% 50%" });
+    gsap.set(heroNav, { autoAlpha: 0, y: -22 });
+    gsap.set(heroMeta, { autoAlpha: 0, x: -38 });
+    gsap.set(heroWords, {
+      yPercent: 112,
+      scaleY: 0.68,
+      scaleX: 0.96,
+      transformOrigin: "50% 100%",
+    });
+    gsap.set(heroPeriod, { autoAlpha: 0, scale: 0.45, transformOrigin: "50% 80%" });
+    gsap.set([heroCopy, heroCtas], { autoAlpha: 0, y: 38 });
+    gsap.set(heroFoot, { autoAlpha: 0, y: 24 });
+
+    gsap.timeline({ defaults: { ease: PREMIUM_EASE } })
+      .to(heroMedia, { scale: 1, duration: 2.1, ease: "power3.out" }, 0)
+      .to(heroNav, { autoAlpha: 1, y: 0, duration: 0.95 }, 0.12)
+      .to(heroMeta, { autoAlpha: 1, x: 0, duration: 0.82 }, 0.2)
+      .to(heroWords, { yPercent: 0, scaleY: 1, scaleX: 1, duration: 1.18, stagger: 0.09, ease: "power4.out" }, 0.24)
+      .to(heroPeriod, { autoAlpha: 1, scale: 1, duration: 0.62, ease: "power4.out" }, 0.9)
+      .to([heroCopy, heroCtas], { autoAlpha: 1, y: 0, duration: 0.82, stagger: 0.08 }, 0.84)
+      .to(heroFoot, { autoAlpha: 1, y: 0, duration: 0.7 }, 1.08);
     return null;
   }
 
