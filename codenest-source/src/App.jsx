@@ -277,17 +277,17 @@ function BackgroundMedia({ content }) {
 
 function Logo({ brand, logoImage }) {
   return (
-    <a className="group flex items-center gap-3 text-white" href="#top" aria-label={`${brand} home`}>
-      <span className="relative grid size-8 place-items-center overflow-hidden border border-white/45 font-mono text-[10px] font-bold">
-        {logoImage ? <img className="h-full w-full object-cover" src={logoImage} alt="" /> : "C/N"}
-        {!logoImage && <span className="absolute -right-1 -top-1 size-2 bg-[#5ed29c] transition-transform duration-300 group-hover:scale-125" />}
+    <a className="group flex min-w-0 items-center gap-3 text-[#ece9df]" href="#top" aria-label={`${brand} home`}>
+      <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-[14px] bg-[#d6d8d2] font-mono text-[10px] font-black text-[#182019]">
+        {logoImage ? <img className="h-full w-full object-cover" src={logoImage} alt="" /> : "A/P"}
+        {!logoImage && <span className="absolute right-1 top-1 size-2 rounded-full bg-[#cf4c3e] transition-transform duration-300 group-hover:scale-125" />}
       </span>
-      <span className="text-[15px] font-bold tracking-[0]">{brand}</span>
+      <span className="max-w-56 truncate text-[15px] font-bold tracking-[0]">{brand}</span>
     </a>
   );
 }
 
-function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose }) {
+function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, onEdit }) {
   const items = navTargets.map((item) => ({
     ...item,
     label: navigation?.[item.key]?.trim() || DEFAULT_CONTENT.navigation[item.key],
@@ -305,14 +305,14 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose })
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#070b0a]/35 backdrop-blur-md">
-        <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#090c0a]/78 backdrop-blur-xl">
+        <div className="mx-auto flex h-20 max-w-[1520px] items-center justify-between px-5 sm:px-8 lg:px-10">
           <Logo brand={brand} logoImage={logoImage} />
           <nav className="hidden items-center gap-9 md:flex" aria-label="Primary navigation">
             {items.map((item) => (
               <a
                 key={item.key}
-                className="max-w-36 truncate text-[16px] font-semibold text-white transition-colors duration-200 hover:text-[#5ed29c] focus-visible:text-[#5ed29c]"
+                className="max-w-36 truncate text-[15px] font-semibold text-[#ece9df] transition-colors duration-200 hover:text-[#df6254] focus-visible:text-[#df6254]"
                 href={item.href}
                 title={item.label}
               >
@@ -321,7 +321,7 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose })
             ))}
           </nav>
           <button
-            className="grid size-11 place-items-center text-white md:hidden"
+            className="grid size-11 place-items-center rounded-full border border-white/15 text-[#ece9df] md:hidden"
             type="button"
             aria-label={isOpen ? "Close navigation" : "Open navigation"}
             aria-expanded={isOpen}
@@ -335,7 +335,7 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose })
 
       <div
         id="mobile-menu"
-        className={`fixed inset-0 z-40 flex bg-[#070b0a] px-6 pb-12 pt-32 transition-[opacity,visibility] duration-300 md:hidden ${
+        className={`fixed inset-0 z-40 flex bg-[#090c0a] px-5 pb-8 pt-28 transition-[opacity,visibility] duration-300 md:hidden ${
           isOpen ? "visible opacity-100" : "invisible opacity-0"
         }`}
         aria-hidden={!isOpen}
@@ -345,16 +345,30 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose })
             {items.map((item, index) => (
               <a
                 key={item.key}
-                className="flex items-center justify-between border-b border-white/10 py-5 text-3xl font-extrabold text-white transition-colors hover:text-[#5ed29c]"
+                className="module-card mb-2 flex items-center justify-between bg-[#171c18] px-5 py-5 text-2xl font-extrabold text-[#ece9df] transition-colors hover:bg-[#415241]"
                 href={item.href}
                 onClick={onClose}
               >
                 <span className="min-w-0 break-words pr-4">{item.label}</span>
-                <span className="font-jakarta text-[10px] text-[#5ed29c]">0{index + 1}</span>
+                <span className="font-jakarta text-[10px] text-[#df6254]">0{index + 1}</span>
               </a>
             ))}
+            <button
+              className="module-card mt-2 flex items-center justify-between bg-[#ece9df] px-5 py-5 text-left text-xl font-extrabold text-[#172018] transition-colors hover:bg-white"
+              type="button"
+              onClick={() => {
+                onClose();
+                onEdit();
+              }}
+            >
+              <span className="flex items-center gap-3">
+                <Settings size={20} />
+                Edit content
+              </span>
+              <span className="font-jakarta text-[10px] text-[#cf4c3e]">ADMIN</span>
+            </button>
           </div>
-          <p className="max-w-64 text-xs leading-5 text-white/50">
+          <p className="max-w-64 text-xs leading-5 text-white/45">
             Build the skills. Ship the work. Start the career.
           </p>
         </nav>
@@ -363,58 +377,21 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose })
   );
 }
 
-function CentralGlow() {
-  return (
-    <svg
-      className="pointer-events-none absolute left-1/2 top-[7%] h-[220px] w-[min(980px,90vw)] -translate-x-1/2 opacity-75"
-      viewBox="0 0 980 220"
-      fill="none"
-      aria-hidden="true"
-    >
-      <defs>
-        <filter id="cyan-glow" x="-20%" y="-100%" width="140%" height="300%">
-          <feGaussianBlur stdDeviation="25" />
-        </filter>
-      </defs>
-      <ellipse
-        cx="490"
-        cy="105"
-        rx="360"
-        ry="40"
-        fill="#1a8069"
-        fillOpacity="0.52"
-        filter="url(#cyan-glow)"
-      />
-    </svg>
-  );
-}
-
-function GridLines() {
-  return (
-    <div className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden="true">
-      {[25, 50, 75].map((position) => (
-        <span
-          key={position}
-          className="absolute inset-y-0 w-px bg-white/10"
-          style={{ left: `${position}%` }}
-        />
-      ))}
-    </div>
-  );
-}
-
 function GlassCard({ content }) {
   return (
-    <aside className="liquid-card h-[200px] w-[200px] translate-y-[-50px] p-5 text-white">
+    <aside className="module-card module-outline flex min-h-[210px] flex-col justify-between bg-[#415241] p-5 text-[#ece9df] sm:p-6">
       <div className="flex h-full flex-col justify-between">
-        <span className="font-jakarta text-[14px] font-bold text-white/75">{content.year}</span>
+        <div className="flex items-start justify-between gap-4">
+          <span className="font-jakarta text-[14px] font-bold text-white/75">{content.year}</span>
+          <span className="size-3 rounded-full bg-[#cf4c3e]" aria-hidden="true" />
+        </div>
         <div>
-          <h2 className="max-w-[155px] text-[18px] font-semibold leading-[1.08] tracking-[0]">
+          <h2 className="max-w-[230px] text-[17px] font-semibold leading-[1.08] tracking-[0] sm:text-[19px]">
             {content.lead}{" "}
-            <span className="font-instrument text-[21px] font-normal italic">{content.accent}</span>{" "}
+            <span className="font-instrument inline-block pb-1 text-[21px] font-normal italic leading-[1.1]">{content.accent}</span>{" "}
             {content.tail}
           </h2>
-          <p className="mt-3 text-[11px] leading-[1.45] text-white/55">{content.description}</p>
+          <p className="mt-3 max-w-[250px] text-[10px] leading-[1.5] text-white/58 sm:text-[11px]">{content.description}</p>
         </div>
       </div>
     </aside>
@@ -423,7 +400,7 @@ function GlassCard({ content }) {
 
 function Field({ label, value, onChange, multiline = false }) {
   const className =
-    "mt-2 w-full border border-white/15 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-white/25 focus:border-[#5ed29c]";
+    "mt-2 w-full rounded-[10px] border border-white/15 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-white/25 focus:border-[#df6254]";
   return (
     <label className="block text-[11px] font-bold uppercase text-white/55">
       {label}
@@ -440,7 +417,7 @@ function UploadButton({ label = "Upload image", onChange, disabled = false }) {
   return (
     <label
       className={`flex min-h-10 items-center justify-center gap-2 border border-dashed border-white/20 text-[10px] font-bold uppercase text-white/55 transition-colors ${
-        disabled ? "cursor-wait opacity-45" : "cursor-pointer hover:border-[#5ed29c] hover:text-[#5ed29c]"
+        disabled ? "cursor-wait opacity-45" : "cursor-pointer hover:border-[#df6254] hover:text-[#df6254]"
       }`}
     >
       <Upload size={14} /> {disabled ? "Uploading..." : label}
@@ -454,10 +431,10 @@ function RangeField({ label, value, min = 80, max = 280, onChange }) {
     <label className="block text-[11px] font-bold uppercase text-white/55">
       <span className="flex items-center justify-between">
         {label}
-        <span className="text-[#5ed29c]">{value}vh</span>
+        <span className="text-[#df6254]">{value}vh</span>
       </span>
       <input
-        className="mt-3 w-full accent-[#5ed29c]"
+        className="mt-3 w-full accent-[#df6254]"
         type="range"
         min={min}
         max={max}
@@ -472,7 +449,7 @@ function RangeField({ label, value, min = 80, max = 280, onChange }) {
 function EditorGroup({ title, children, open = false }) {
   return (
     <details className="border border-white/12" open={open}>
-      <summary className="cursor-pointer px-4 py-4 text-[11px] font-bold uppercase text-[#5ed29c]">{title}</summary>
+      <summary className="cursor-pointer px-4 py-4 text-[11px] font-bold uppercase text-[#df6254]">{title}</summary>
       <div className="space-y-4 border-t border-white/10 p-4">{children}</div>
     </details>
   );
@@ -492,6 +469,12 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
   const isUnlocked = Boolean(session);
 
   useEffect(() => setDraft(content), [content]);
+
+  useEffect(() => {
+    const openEditor = () => setIsOpen(true);
+    window.addEventListener("codenest:open-editor", openEditor);
+    return () => window.removeEventListener("codenest:open-editor", openEditor);
+  }, []);
 
   const closeEditor = useCallback(() => {
     setIsOpen(false);
@@ -668,7 +651,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
   return (
     <>
       <button
-        className="fixed bottom-5 right-5 z-30 grid size-12 place-items-center border border-white/20 bg-[#070b0a]/80 text-white shadow-2xl backdrop-blur-md transition-colors hover:border-[#5ed29c] hover:text-[#5ed29c]"
+        className="fixed bottom-5 right-5 z-30 hidden size-14 place-items-center rounded-full border-[6px] border-[#d6d8d2] bg-[#ece9df] text-[#172018] shadow-2xl transition-colors hover:bg-white hover:text-[#cf4c3e] md:grid"
         type="button"
         title="Edit content"
         aria-label="Edit page content"
@@ -679,13 +662,13 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
 
       {isOpen && (
         <div className="fixed inset-0 z-[70] bg-black/75 p-3 backdrop-blur-sm sm:p-5">
-          <section className="ml-auto flex h-full w-full max-w-[440px] flex-col overflow-hidden border border-white/15 bg-[#0a0f0d] text-white shadow-2xl">
+          <section className="ml-auto flex h-full w-full max-w-[440px] flex-col overflow-hidden rounded-[28px] border-[6px] border-[#d6d8d2] bg-[#0a0f0d] text-white shadow-2xl">
             <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
               <div className="flex items-center gap-3">
-                <Settings size={17} className="text-[#5ed29c]" />
+                <Settings size={17} className="text-[#df6254]" />
                 <div>
                   <p className="text-sm font-bold">Content editor</p>
-                  <p className={`text-[10px] ${cloudStatus === "online" ? "text-[#5ed29c]" : "text-white/45"}`}>
+                  <p className={`text-[10px] ${cloudStatus === "online" ? "text-[#df6254]" : "text-white/45"}`}>
                     {cloudStatus === "online" ? "Supabase connected" : cloudStatus === "connecting" ? "Connecting..." : "Local fallback"}
                   </p>
                 </div>
@@ -693,7 +676,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
               <div className="flex items-center">
                 {isUnlocked && (
                   <button
-                    className="grid size-10 place-items-center text-white/55 hover:text-[#5ed29c]"
+                    className="grid size-10 place-items-center text-white/55 hover:text-[#df6254]"
                     type="button"
                     title="Sign out"
                     aria-label="Sign out of editor"
@@ -710,13 +693,13 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
 
             {!isUnlocked ? (
               <form className="flex flex-1 flex-col justify-center p-6" onSubmit={unlock}>
-                <LockKeyhole size={28} className="text-[#5ed29c]" />
+                <LockKeyhole size={28} className="text-[#df6254]" />
                 <h2 className="mt-5 text-2xl font-extrabold">Admin sign in</h2>
                 <p className="mt-2 max-w-xs text-sm leading-6 text-white/55">Use the portfolio administrator account created in Supabase Auth.</p>
                 <label className="mt-7 text-[11px] font-bold uppercase text-white/55">
                   Email
                   <input
-                    className="mt-2 w-full border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#5ed29c]"
+                    className="mt-2 w-full rounded-[10px] border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#df6254]"
                     type="email"
                     autoComplete="email"
                     autoFocus
@@ -727,7 +710,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                 <label className="mt-4 text-[11px] font-bold uppercase text-white/55">
                   Password
                   <input
-                    className="mt-2 w-full border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#5ed29c]"
+                    className="mt-2 w-full rounded-[10px] border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#df6254]"
                     type="password"
                     autoComplete="current-password"
                     value={password}
@@ -736,7 +719,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                 </label>
                 {error && <p className="mt-3 text-xs text-red-300">{error}</p>}
                 <button
-                  className="mt-5 min-h-12 bg-[#5ed29c] text-xs font-bold uppercase text-[#070b0a] disabled:cursor-wait disabled:opacity-60"
+                  className="mt-5 min-h-12 rounded-full bg-[#df6254] text-xs font-bold uppercase text-white disabled:cursor-wait disabled:opacity-60"
                   type="submit"
                   disabled={isAuthenticating || !email.trim() || !password}
                 >
@@ -783,7 +766,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                       <button
                         className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
                           draft.mediaMode !== "image"
-                            ? "border-[#5ed29c] bg-[#5ed29c] text-[#070b0a]"
+                            ? "border-[#df6254] bg-[#df6254] text-white"
                             : "border-white/15 text-white/65"
                         }`}
                         type="button"
@@ -794,7 +777,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                       <button
                         className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
                           draft.mediaMode === "image"
-                            ? "border-[#5ed29c] bg-[#5ed29c] text-[#070b0a]"
+                            ? "border-[#df6254] bg-[#df6254] text-white"
                             : "border-white/15 text-white/65"
                         }`}
                         type="button"
@@ -887,7 +870,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                           </div>
                         ))}
                         <button
-                          className="flex min-h-10 w-full items-center justify-center gap-2 border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#5ed29c] hover:text-[#5ed29c]"
+                          className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#df6254] hover:text-[#df6254]"
                           type="button"
                           onClick={() => addGalleryImage("projects", index)}
                         >
@@ -946,7 +929,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                           </div>
                         ))}
                         <button
-                          className="flex min-h-10 w-full items-center justify-center gap-2 border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#5ed29c] hover:text-[#5ed29c]"
+                          className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#df6254] hover:text-[#df6254]"
                           type="button"
                           onClick={() => addGalleryImage("blog", index)}
                         >
@@ -1004,7 +987,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                           </div>
                         ))}
                         <button
-                          className="flex min-h-10 w-full items-center justify-center gap-2 border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#5ed29c] hover:text-[#5ed29c]"
+                          className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#df6254] hover:text-[#df6254]"
                           type="button"
                           onClick={() => addGalleryImage("resume", index)}
                         >
@@ -1057,7 +1040,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                       </div>
                     ))}
                     <button
-                      className="flex min-h-10 w-full items-center justify-center gap-2 border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#5ed29c] hover:text-[#5ed29c]"
+                      className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#df6254] hover:text-[#df6254]"
                       type="button"
                       onClick={addAboutGalleryImage}
                     >
@@ -1069,7 +1052,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
 
                 <footer className="grid shrink-0 grid-cols-[auto_1fr] gap-2 border-t border-white/10 p-4">
                   {notice && (
-                    <p className="col-span-2 border-l-2 border-[#5ed29c] py-1 pl-3 text-xs leading-5 text-white/65" aria-live="polite">
+                    <p className="col-span-2 border-l-2 border-[#df6254] py-1 pl-3 text-xs leading-5 text-white/65" aria-live="polite">
                       {notice}
                     </p>
                   )}
@@ -1087,7 +1070,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                     <RotateCcw size={16} />
                   </button>
                   <button
-                    className="flex min-h-11 items-center justify-center gap-2 bg-[#5ed29c] text-xs font-bold uppercase text-[#070b0a]"
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#df6254] text-xs font-bold uppercase text-white"
                     type="button"
                     disabled={isSaving || isUploading}
                     onClick={save}
@@ -1095,7 +1078,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                     <Save size={16} /> {isSaving ? "Saving..." : isUploading ? "Uploading..." : "Save changes"}
                   </button>
                   <button
-                    className="col-span-2 flex min-h-11 items-center justify-center gap-2 border border-white/15 text-xs font-bold uppercase text-white/70 hover:border-[#5ed29c] hover:text-[#5ed29c]"
+                    className="col-span-2 flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-xs font-bold uppercase text-white/70 hover:border-[#df6254] hover:text-[#df6254]"
                     type="button"
                     onClick={copyLink}
                   >
@@ -1119,6 +1102,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [cloudStatus, setCloudStatus] = useState("connecting");
   const [isContentReady, setIsContentReady] = useState(false);
+  const openEditor = () => window.dispatchEvent(new Event("codenest:open-editor"));
 
   useEffect(() => {
     let cancelled = false;
@@ -1282,7 +1266,7 @@ function App() {
   if (detailId) {
     return (
       <>
-        <DetailPage detailId={detailId} content={content} />
+        <DetailPage detailId={detailId} content={content} onEdit={openEditor} />
         <ContentEditor
           content={content}
           session={session}
@@ -1298,15 +1282,8 @@ function App() {
   }
 
   return (
-    <main id="top" className="min-h-[100dvh] overflow-x-clip bg-[#070b0a] text-white">
+    <main id="top" className="min-h-[100dvh] overflow-x-clip bg-[#090c0a] text-[#ece9df]">
       <div className="relative min-h-[100dvh] overflow-hidden">
-        <BackgroundMedia content={content} />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#070b0a_0%,rgba(7,11,10,0.88)_28%,rgba(7,11,10,0.18)_72%,transparent_100%)]" />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,#070b0a_0%,rgba(7,11,10,0.72)_18%,transparent_58%)]" />
-        <div className="pointer-events-none absolute inset-0 bg-black/10" />
-        <CentralGlow />
-        <GridLines />
-
         <Navigation
           brand={content.brand}
           logoImage={content.logoImage}
@@ -1314,24 +1291,47 @@ function App() {
           isOpen={isMenuOpen}
           onToggle={() => setIsMenuOpen((current) => !current)}
           onClose={() => setIsMenuOpen(false)}
+          onEdit={openEditor}
         />
 
-        <section className="relative z-10 mx-auto flex min-h-[100dvh] max-w-[1440px] items-end px-5 pb-10 pt-40 sm:px-8 sm:pb-14 lg:px-12 lg:pb-16">
-          <div className="w-full max-w-[860px]">
-            <GlassCard content={content.card} />
-            <div className="-mt-8 border-l border-white/20 pl-5 sm:pl-7">
-              <p className="font-jakarta text-[11px] font-bold uppercase tracking-[0] text-[#5ed29c]">{content.eyebrow}</p>
-              <h1 className="mt-4 text-[40px] font-extrabold uppercase leading-[0.94] tracking-[0] text-white sm:text-[54px] lg:text-[72px]">
-                {content.headline}<span className="text-[#5ed29c]">.</span>
-              </h1>
-              <p className="mt-5 max-w-lg text-[14px] leading-6 text-white/70">{content.description}</p>
-              <a
-                className="group mt-7 inline-flex min-h-12 items-center gap-3 rounded-full bg-[#5ed29c] px-6 text-[12px] font-bold uppercase text-[#070b0a] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-[#72e1ad] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#5ed29c]"
-                href="#projects"
-              >
-                {content.ctaLabel}
-                <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" size={17} />
-              </a>
+        <section className="relative z-10 mx-auto flex min-h-[100dvh] max-w-[1540px] px-3 pb-4 pt-[92px] sm:px-5 lg:px-7">
+          <div className="frame-board grid w-full gap-2 p-0 lg:grid-cols-[0.68fr_1.32fr]">
+            <div className="order-2 grid grid-cols-2 gap-2 lg:order-1 lg:grid-cols-1 lg:grid-rows-2">
+              <GlassCard content={content.card} />
+              <div className="module-card module-outline flex min-h-[210px] flex-col justify-between bg-[#cf4c3e] p-5 text-[#f4eee6] sm:p-6">
+                <p className="font-jakarta text-[10px] font-bold uppercase text-white/78">{content.eyebrow}</p>
+                <div>
+                  <p className="line-clamp-5 text-[11px] leading-[1.55] text-white/78 sm:text-[13px]">{content.description}</p>
+                  <a
+                    className="group mt-5 inline-flex min-h-11 items-center gap-3 rounded-full bg-[#ece9df] px-5 text-[11px] font-black uppercase text-[#182019] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ece9df]"
+                    href="#projects"
+                  >
+                    {content.ctaLabel}
+                    <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" size={16} />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="module-card module-outline relative order-1 min-h-[52vh] bg-[#080b09] p-5 sm:p-8 lg:order-2 lg:min-h-[calc(100dvh-108px)] lg:p-10 xl:p-12">
+              <BackgroundMedia content={content} />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,rgba(8,11,9,0.78)_0%,rgba(8,11,9,0.14)_60%,transparent_100%)]" />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(8,11,9,0.28)_0%,transparent_70%)]" />
+
+              <div className="relative z-10 flex items-start justify-between gap-4">
+                <span className="rounded-full border border-white/20 bg-black/20 px-4 py-2 text-[10px] font-bold uppercase text-white/70 backdrop-blur-md">
+                  {content.brand}
+                </span>
+                <span className="rounded-full bg-[#d6d8d2] px-4 py-2 text-[10px] font-black uppercase text-[#182019]">
+                  {content.card.year}
+                </span>
+              </div>
+
+              <div className="absolute inset-x-5 bottom-6 z-10 sm:inset-x-8 sm:bottom-8 lg:inset-x-10 lg:bottom-10 xl:inset-x-12 xl:bottom-12">
+                <h1 className="display-rounded max-w-[12ch] break-words text-[38px] uppercase leading-[0.9] text-[#ece9df] sm:text-[56px] lg:text-[72px] xl:text-[86px]">
+                  {content.headline}<span className="font-sans font-black text-[#df6254]">.</span>
+                </h1>
+              </div>
             </div>
           </div>
         </section>
