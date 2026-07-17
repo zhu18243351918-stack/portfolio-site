@@ -122,7 +122,7 @@ export default function DetailPage({ detailId, content, onEdit }) {
         <div className="w-full max-w-3xl border border-white/14 bg-[#0d0f12] p-8 sm:p-12">
           <p className="text-[10px] font-bold uppercase text-[#e5ff48]">Gallery unavailable</p>
           <h1 className="display-editorial mt-5 text-4xl leading-[0.94] sm:text-6xl">This secondary page does not exist.</h1>
-          <a className="mt-9 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#e5ff48] px-6 text-sm font-bold text-[#090a0c]" href={homeHref}>
+          <a className="cursor-target mt-9 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#e5ff48] px-6 text-sm font-bold text-[#090a0c]" href={homeHref}>
             <ArrowLeft size={17} /> Return to portfolio
           </a>
         </div>
@@ -141,14 +141,14 @@ export default function DetailPage({ detailId, content, onEdit }) {
 
       <header className="fixed inset-x-0 top-0 z-40 border-b border-white/12 bg-[#08090b]/70 backdrop-blur-xl">
         <div className="mx-auto flex h-[84px] max-w-[1700px] items-center justify-between px-5 sm:px-8 lg:px-12">
-          <a href={homeHref} aria-label="Return to portfolio">
+          <a className="cursor-target" href={homeHref} aria-label="Return to portfolio">
             <DetailLogo brand={content.brand} logoImage={content.logoImage} />
           </a>
           <div className="flex items-center gap-2">
-            <button className="grid size-11 place-items-center rounded-full border border-white/18 bg-white/6 text-white md:hidden" type="button" aria-label="Edit page content" onClick={onEdit}>
+            <button className="cursor-target grid size-11 place-items-center rounded-full border border-white/18 bg-white/6 text-white md:hidden" type="button" aria-label="Edit page content" onClick={onEdit}>
               <Settings size={17} />
             </button>
-            <a className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/18 bg-white/6 px-5 text-[10px] font-bold uppercase text-white hover:border-[#e5ff48] hover:text-[#e5ff48]" href={homeHref}>
+            <a className="cursor-target inline-flex min-h-11 items-center gap-2 rounded-full border border-white/18 bg-white/6 px-5 text-[10px] font-bold uppercase text-white hover:border-[#e5ff48] hover:text-[#e5ff48]" href={homeHref}>
               <ArrowLeft size={15} /> Back
             </a>
           </div>
@@ -189,13 +189,13 @@ export default function DetailPage({ detailId, content, onEdit }) {
 
             <div className="absolute inset-x-4 bottom-4 flex items-center justify-between gap-3 sm:inset-x-6 sm:bottom-6">
               <div className="flex gap-2">
-                <button className="grid size-11 place-items-center rounded-full border border-white/20 bg-black/52 text-white backdrop-blur-md hover:border-[#e5ff48] hover:text-[#e5ff48]" type="button" aria-label="Previous image" onClick={() => goTo(activeIndex - 1)}>
+                <button className="cursor-target grid size-11 place-items-center rounded-full border border-white/20 bg-black/52 text-white backdrop-blur-md hover:border-[#e5ff48] hover:text-[#e5ff48]" type="button" aria-label="Previous image" onClick={() => goTo(activeIndex - 1)}>
                   <ChevronLeft size={18} />
                 </button>
-                <button className="grid size-11 place-items-center rounded-full bg-[#e5ff48] text-[#090a0c] shadow-lg" type="button" aria-label={isPaused ? "Play slideshow" : "Pause slideshow"} onClick={() => setIsPaused((current) => !current)}>
+                <button className="cursor-target grid size-11 place-items-center rounded-full bg-[#e5ff48] text-[#090a0c] shadow-lg" type="button" aria-label={isPaused ? "Play slideshow" : "Pause slideshow"} onClick={() => setIsPaused((current) => !current)}>
                   {isPaused ? <Play size={16} /> : <Pause size={16} />}
                 </button>
-                <button className="grid size-11 place-items-center rounded-full border border-white/20 bg-black/52 text-white backdrop-blur-md hover:border-[#e5ff48] hover:text-[#e5ff48]" type="button" aria-label="Next image" onClick={() => goTo(activeIndex + 1)}>
+                <button className="cursor-target grid size-11 place-items-center rounded-full border border-white/20 bg-black/52 text-white backdrop-blur-md hover:border-[#e5ff48] hover:text-[#e5ff48]" type="button" aria-label="Next image" onClick={() => goTo(activeIndex + 1)}>
                   <ChevronRight size={18} />
                 </button>
               </div>

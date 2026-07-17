@@ -42,7 +42,7 @@ export function ExperienceSection({ content, projectCount, size }) {
         <div className="mt-12 grid gap-12 lg:grid-cols-[0.82fr_1.18fr] lg:gap-20 xl:gap-28">
           <a
             data-motion-intro
-            className="specular-frame group relative block min-h-[620px] overflow-hidden rounded-[6px] bg-[#111317] lg:min-h-[760px]"
+            className="cursor-target specular-frame group relative block min-h-[620px] overflow-hidden rounded-[6px] bg-[#111317] lg:min-h-[760px]"
             href={detailHref("about")}
             aria-label="Open personal experience gallery"
             onClick={rememberHomeScrollPosition}
@@ -93,7 +93,7 @@ export function ExperienceSection({ content, projectCount, size }) {
             </div>
 
             <div data-motion-copy className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
-              <a className="inline-flex items-center gap-3 text-sm font-semibold text-[#f1efe4] hover:text-[#e5ff48]" href={`mailto:${content.email}`}>
+              <a className="cursor-target inline-flex items-center gap-3 text-sm font-semibold text-[#f1efe4] hover:text-[#e5ff48]" href={`mailto:${content.email}`}>
                 <Mail size={16} /> {content.email}
               </a>
               <p className="inline-flex items-center gap-3 text-sm text-[#d0cec2]/52">
@@ -137,7 +137,7 @@ export function ProjectsSection({ content, size }) {
             <article
               key={item.index}
               data-motion-card
-              className="specular-frame project-feature group relative min-h-[560px] overflow-hidden rounded-[6px] bg-[#15171b] sm:min-h-[680px] lg:min-h-[min(82vh,920px)]"
+              className="cursor-target specular-frame project-feature group relative min-h-[560px] overflow-hidden rounded-[6px] bg-[#15171b] sm:min-h-[680px] lg:min-h-[min(82vh,920px)]"
               onPointerMove={steerSpecularEdge}
               onPointerLeave={resetSpecularEdge}
             >
@@ -199,7 +199,7 @@ export function StrengthsSection({ content, capabilities, size }) {
             <a
               key={`${item.category}-${item.title}`}
               data-motion-card
-              className="specular-frame specular-frame--quiet group relative block min-h-[470px] overflow-hidden rounded-[6px] border border-white/10 bg-[#14161a]"
+              className="cursor-target specular-frame specular-frame--quiet group relative block min-h-[470px] overflow-hidden rounded-[6px] border border-white/10 bg-[#14161a]"
               href={detailHref(`blog-${index}`)}
               onClick={rememberHomeScrollPosition}
               onPointerMove={steerSpecularEdge}
@@ -242,7 +242,7 @@ export function StrengthsSection({ content, capabilities, size }) {
               <a
                 key={item.step}
                 data-motion-card
-                className={`group min-h-[300px] border-white/12 p-6 transition-colors hover:bg-[#11141a] sm:p-8 ${index % 4 ? "lg:border-l" : ""} ${index >= 4 ? "border-t" : ""} ${index % 2 ? "sm:border-l" : ""}`}
+                className={`cursor-target group min-h-[300px] border-white/12 p-6 transition-colors hover:bg-[#11141a] sm:p-8 ${index % 4 ? "lg:border-l" : ""} ${index >= 4 ? "border-t" : ""} ${index % 2 ? "sm:border-l" : ""}`}
                 href={detailHref(`resume-${index}`)}
                 onClick={rememberHomeScrollPosition}
               >
@@ -296,7 +296,7 @@ export function ContactSection({ content }) {
             </div>
           </div>
           <a
-            className="group inline-flex min-h-16 w-fit items-center gap-5 rounded-full bg-[#e5ff48] px-7 text-sm font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-1"
+            className="cursor-target group inline-flex min-h-16 w-fit items-center gap-5 rounded-full bg-[#e5ff48] px-7 text-sm font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-1"
             href={`mailto:${content.email}`}
           >
             Contact me
@@ -308,7 +308,7 @@ export function ContactSection({ content }) {
 
         <footer data-motion-copy className="mt-16 flex flex-col gap-4 border-t border-white/10 pt-6 text-[10px] font-bold uppercase text-white/34 sm:flex-row sm:items-center sm:justify-between">
           <span>{content.name} / Portfolio 2026</span>
-          <a className="inline-flex items-center gap-2 text-white/52 hover:text-[#e5ff48]" href="#top">
+          <a className="cursor-target inline-flex items-center gap-2 text-white/52 hover:text-[#e5ff48]" href="#top">
             Back to top <ArrowUpRight size={14} />
           </a>
         </footer>

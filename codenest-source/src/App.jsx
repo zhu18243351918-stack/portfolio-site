@@ -22,6 +22,7 @@ import { ContactSection, ExperienceSection, ProjectsSection, StrengthsSection } 
 import { setupHomeAnimations, shouldPlayOpening } from "./animations";
 import DetailPage from "./DetailPage";
 import Galaxy from "./Galaxy";
+import TargetCursor from "./TargetCursor";
 import { consumeHomeScrollPosition, storeHomeScrollPosition } from "./scrollPosition";
 import {
   fetchRemoteContent,
@@ -469,7 +470,7 @@ function BackgroundMedia({ content }) {
 
 function Logo({ brand, logoImage }) {
   return (
-    <a className="group flex min-w-0 items-center gap-3 text-[#f1efe4]" href="#top" aria-label={`${brand} home`}>
+    <a className="cursor-target group flex min-w-0 items-center gap-3 text-[#f1efe4]" href="#top" aria-label={`${brand} home`}>
       <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-[4px] border border-white/20 bg-white/8 font-mono text-[10px] font-black text-white backdrop-blur-md">
         {logoImage ? <img className="h-full w-full object-cover" src={logoImage} alt="" /> : "A/P"}
         {!logoImage && <span className="absolute right-1 top-1 size-2 bg-[#e5ff48] transition-transform duration-300 group-hover:scale-125" />}
@@ -504,7 +505,7 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
             {items.map((item) => (
               <a
                 key={item.key}
-                className="max-w-36 truncate py-2 text-[11px] font-bold uppercase text-white/58 transition-colors duration-200 hover:text-[#e5ff48] focus-visible:text-[#e5ff48]"
+                className="cursor-target max-w-36 truncate py-2 text-[11px] font-bold uppercase text-white/58 transition-colors duration-200 hover:text-[#e5ff48] focus-visible:text-[#e5ff48]"
                 href={item.href}
                 title={item.label}
               >
@@ -513,7 +514,7 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <a className="hidden min-h-11 items-center gap-3 rounded-full bg-[#e5ff48] px-5 text-[10px] font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-0.5 sm:inline-flex" href="#contact">
+            <a className="cursor-target hidden min-h-11 items-center gap-3 rounded-full bg-[#e5ff48] px-5 text-[10px] font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-0.5 sm:inline-flex" href="#contact">
               Contact <ArrowRight size={15} />
             </a>
             <button
@@ -827,7 +828,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
   return (
     <>
       <button
-        className="fixed bottom-5 right-5 z-30 hidden size-12 place-items-center rounded-full border border-white/20 bg-black/52 text-white shadow-2xl backdrop-blur-md transition-colors hover:border-[#e5ff48] hover:text-[#e5ff48] md:grid"
+        className="cursor-target fixed bottom-5 right-5 z-30 hidden size-12 place-items-center rounded-full border border-white/20 bg-black/52 text-white shadow-2xl backdrop-blur-md transition-colors hover:border-[#e5ff48] hover:text-[#e5ff48] md:grid"
         type="button"
         title="Edit content"
         aria-label="Edit page content"
@@ -837,7 +838,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-[70] bg-black/75 p-3 backdrop-blur-sm sm:p-5">
+        <div className="editor-surface fixed inset-0 z-[70] bg-black/75 p-3 backdrop-blur-sm sm:p-5">
           <section className="ml-auto flex h-full w-full max-w-[440px] flex-col overflow-hidden rounded-[28px] border-[6px] border-[#d6d8d2] bg-[#0a0f0d] text-white shadow-2xl">
             <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
               <div className="flex items-center gap-3">
@@ -1474,6 +1475,7 @@ function App() {
   if (detailId) {
     return (
       <>
+        <TargetCursor />
         <DetailPage detailId={detailId} content={content} onEdit={openEditor} />
         <ContentEditor
           content={content}
@@ -1490,7 +1492,9 @@ function App() {
   }
 
   return (
-    <main ref={pageRef} id="top" className="min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]">
+    <>
+      <TargetCursor />
+      <main ref={pageRef} id="top" className="min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]">
       <div data-opening className="opening-curtain" aria-hidden="true">
         <div className="opening-lockup">
           <div data-opening-mark className="opening-mark">
@@ -1545,11 +1549,11 @@ function App() {
             <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_0.72fr] lg:items-end lg:gap-20">
               <p data-hero-copy className="max-w-2xl text-sm leading-7 text-white/58 sm:text-base sm:leading-8">{content.description}</p>
               <div data-hero-cta className="flex flex-wrap gap-3 lg:justify-self-end">
-                <a className="group inline-flex min-h-14 items-center gap-5 rounded-full bg-[#e5ff48] px-6 text-[11px] font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-1" href="#projects">
+                <a className="cursor-target group inline-flex min-h-14 items-center gap-5 rounded-full bg-[#e5ff48] px-6 text-[11px] font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-1" href="#projects">
                   {content.ctaLabel}
                   <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} />
                 </a>
-                <a className="inline-flex min-h-14 items-center gap-3 rounded-full border border-white/24 bg-black/16 px-6 text-[11px] font-bold uppercase text-white backdrop-blur-md transition-colors hover:border-white/54" href={`mailto:${content.about.email}`}>
+                <a className="cursor-target inline-flex min-h-14 items-center gap-3 rounded-full border border-white/24 bg-black/16 px-6 text-[11px] font-bold uppercase text-white backdrop-blur-md transition-colors hover:border-white/54" href={`mailto:${content.about.email}`}>
                   Contact me
                 </a>
               </div>
@@ -1578,7 +1582,8 @@ function App() {
         onReset={resetContent}
         onUpload={handleUpload}
       />
-    </main>
+      </main>
+    </>
   );
 }
 

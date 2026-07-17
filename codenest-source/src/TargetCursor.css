@@ -1,0 +1,83 @@
+.target-cursor-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 5px rgb(0 0 0 / 0.52));
+  will-change: transform;
+}
+
+.target-cursor-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  will-change: transform, background-color;
+}
+
+.target-cursor-corner {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #f1efe4;
+  will-change: transform, border-color;
+}
+
+.corner-tl {
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.corner-tr {
+  border-left: 0;
+  border-bottom: 0;
+}
+
+.corner-br {
+  border-left: 0;
+  border-top: 0;
+}
+
+.corner-bl {
+  border-right: 0;
+  border-top: 0;
+}
+
+body.target-cursor-enabled,
+body.target-cursor-enabled a,
+body.target-cursor-enabled button {
+  cursor: none !important;
+}
+
+body.target-cursor-enabled .editor-surface,
+body.target-cursor-enabled .editor-surface *,
+body.target-cursor-enabled input,
+body.target-cursor-enabled textarea,
+body.target-cursor-enabled select {
+  cursor: auto !important;
+}
+
+body:has(.editor-surface) .target-cursor-wrapper {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+@media (max-width: 768px), (pointer: coarse), (hover: none), (prefers-reduced-motion: reduce) {
+  .target-cursor-wrapper {
+    display: none !important;
+  }
+
+  body.target-cursor-enabled,
+  body.target-cursor-enabled a,
+  body.target-cursor-enabled button {
+    cursor: auto !important;
+  }
+}
