@@ -316,18 +316,6 @@ textarea:focus-visible {
   }
 }
 
-@media (min-width: 1280px) and (max-width: 1799px) {
-  .portfolio-layout {
-    padding-left: 170px;
-  }
-}
-
-@media (min-width: 1800px) {
-  .portfolio-layout {
-    padding-left: 116px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

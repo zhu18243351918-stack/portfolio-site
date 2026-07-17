@@ -584,7 +584,9 @@ const sidebarTargets = [
 ];
 
 function PortfolioSidebar({ navigation }) {
+  const sidebarRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const labels = sidebarTargets.map((target) =>
     target.label || navigation?.[target.key]?.trim() || DEFAULT_CONTENT.navigation[target.key],
   );
@@ -608,6 +610,18 @@ function PortfolioSidebar({ navigation }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isSidebarOpen) return undefined;
+    const handleWindowPointerMove = (event) => {
+      const rect = sidebarRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const isInside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+      if (!isInside) setIsSidebarOpen(false);
+    };
+    window.addEventListener("pointermove", handleWindowPointerMove, { passive: true });
+    return () => window.removeEventListener("pointermove", handleWindowPointerMove);
+  }, [isSidebarOpen]);
+
   const handleItemClick = useCallback((index) => {
     const target = document.getElementById(sidebarTargets[index].id);
     if (!target) return;
@@ -619,7 +633,18 @@ function PortfolioSidebar({ navigation }) {
   }, []);
 
   return (
-    <aside className="portfolio-sidebar-shell" aria-label="Portfolio sections">
+    <aside
+      ref={sidebarRef}
+      className={`portfolio-sidebar-shell${isSidebarOpen ? " is-open" : ""}`}
+      aria-label="Portfolio sections"
+      title="展开侧边导航"
+      onPointerEnter={() => setIsSidebarOpen(true)}
+      onPointerMove={() => setIsSidebarOpen(true)}
+      onPointerLeave={() => setIsSidebarOpen(false)}
+    >
+      <span className="portfolio-sidebar-hint" aria-hidden="true">
+        <Menu size={14} />
+      </span>
       <LineSidebar items={labels} activeIndex={activeIndex} onItemClick={handleItemClick} />
     </aside>
   );
