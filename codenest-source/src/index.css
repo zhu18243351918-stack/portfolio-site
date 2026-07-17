@@ -158,8 +158,8 @@ textarea:focus-visible {
 .hero-word-mask {
   display: inline-block;
   overflow: hidden;
-  margin-bottom: -0.08em;
-  padding-bottom: 0.08em;
+  margin-bottom: -0.22em;
+  padding-bottom: 0.22em;
   vertical-align: bottom;
 }
 
@@ -313,6 +313,18 @@ textarea:focus-visible {
   .specular-frame::before {
     animation: none;
     opacity: 0.62;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1799px) {
+  .portfolio-layout {
+    padding-left: 170px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .portfolio-layout {
+    padding-left: 116px;
   }
 }
 

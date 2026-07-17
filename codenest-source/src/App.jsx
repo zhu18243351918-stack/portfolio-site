@@ -22,6 +22,7 @@ import { ContactSection, ExperienceSection, ProjectsSection, StrengthsSection } 
 import { setupHomeAnimations, shouldPlayOpening } from "./animations";
 import DetailPage from "./DetailPage";
 import Galaxy from "./Galaxy";
+import LineSidebar from "./LineSidebar";
 import TargetCursor from "./TargetCursor";
 import { consumeHomeScrollPosition, storeHomeScrollPosition } from "./scrollPosition";
 import {
@@ -45,6 +46,7 @@ const CONTENT_STORE_NAME = "content";
 const CONTENT_RECORD_KEY = "current";
 const GALAXY_FOCAL = [0.68, 0.44];
 const GALAXY_ROTATION = [0.96, 0.18];
+const LEGACY_OPERA_LOGO_URL_FRAGMENT = "1784107612896-c334286a-e841-4c40-b2b1-5ef3c07cd6b8";
 const LEGACY_HERO_VIDEO_URL = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_170732_8a9ccda6-5cff-4628-b164-059c500a2b41.mp4";
 const HERO_SCENES = [
   {
@@ -136,6 +138,9 @@ function mergeContent(value = {}) {
   return {
     ...DEFAULT_CONTENT,
     ...value,
+    logoImage: value.logoImage?.includes(LEGACY_OPERA_LOGO_URL_FRAGMENT)
+      ? DEFAULT_CONTENT.logoImage
+      : value.logoImage || DEFAULT_CONTENT.logoImage,
     eyebrow: migratedText(value.eyebrow, ["Career-Ready Curriculum"], DEFAULT_CONTENT.eyebrow),
     description: migratedText(
       value.description,
@@ -570,6 +575,56 @@ function Logo({ brand, logoImage }) {
   );
 }
 
+const sidebarTargets = [
+  { id: "top", label: "首页" },
+  { id: "about", key: "about" },
+  { id: "projects", key: "projects" },
+  { id: "strengths", key: "resume" },
+  { id: "contact", key: "blog" },
+];
+
+function PortfolioSidebar({ navigation }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const labels = sidebarTargets.map((target) =>
+    target.label || navigation?.[target.key]?.trim() || DEFAULT_CONTENT.navigation[target.key],
+  );
+
+  useEffect(() => {
+    const sections = sidebarTargets.map((target) => document.getElementById(target.id));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const nextIndex = sections.indexOf(entry.target);
+          if (nextIndex >= 0) setActiveIndex(nextIndex);
+        });
+      },
+      { rootMargin: "-40% 0px -58% 0px", threshold: 0 },
+    );
+
+    sections.forEach((section) => section && observer.observe(section));
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  const handleItemClick = useCallback((index) => {
+    const target = document.getElementById(sidebarTargets[index].id);
+    if (!target) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+    const hash = sidebarTargets[index].id === "top" ? "" : `#${sidebarTargets[index].id}`;
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${hash}`);
+    setActiveIndex(index);
+  }, []);
+
+  return (
+    <aside className="portfolio-sidebar-shell" aria-label="Portfolio sections">
+      <LineSidebar items={labels} activeIndex={activeIndex} onItemClick={handleItemClick} />
+    </aside>
+  );
+}
+
 function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, onEdit }) {
   const items = navTargets.map((item) => ({
     ...item,
@@ -589,7 +644,7 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
   return (
     <>
       <header data-hero-nav className="fixed inset-x-0 top-0 z-50 border-b border-white/12 bg-[#07080a]/56 text-[#f1efe4] backdrop-blur-xl">
-        <div className="mx-auto flex h-[84px] max-w-[1700px] items-center justify-between px-5 sm:px-8 lg:px-12">
+        <div className="portfolio-layout mx-auto flex h-[84px] max-w-[1700px] items-center justify-between px-5 sm:px-8 lg:px-12">
           <Logo brand={brand} logoImage={logoImage} />
           <nav className="hidden items-center gap-8 lg:flex" aria-label="Primary navigation">
             {items.map((item) => (
@@ -1605,8 +1660,9 @@ function App() {
   return (
     <>
       <TargetCursor />
-      <main ref={pageRef} id="top" className="min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]">
-      <section data-hero className="relative min-h-[100dvh] overflow-hidden bg-[#08090b]">
+      <PortfolioSidebar navigation={content.navigation} />
+      <main ref={pageRef} className="min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]">
+      <section id="top" data-hero className="relative min-h-[100dvh] overflow-hidden bg-[#08090b]">
         <HeroSceneBackground content={content} activeScene={activeHeroScene} />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,6,8,0.92)_0%,rgba(5,6,8,0.42)_52%,rgba(5,6,8,0.66)_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.2)_0%,rgba(5,6,8,0.12)_40%,rgba(5,6,8,0.94)_100%)]" />
@@ -1623,7 +1679,7 @@ function App() {
           onEdit={openEditor}
         />
 
-        <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-[1700px] flex-col justify-end px-5 pb-9 pt-32 sm:px-8 sm:pb-12 lg:px-12 lg:pb-14">
+        <div className="portfolio-layout relative z-10 mx-auto flex min-h-[100dvh] max-w-[1700px] flex-col justify-end px-5 pb-9 pt-32 sm:px-8 sm:pb-12 lg:px-12 lg:pb-14">
           <div className="max-w-[1500px]">
             <div data-hero-meta className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-7">
               <span className="text-[10px] font-bold uppercase text-[#e5ff48]">{content.eyebrow}</span>

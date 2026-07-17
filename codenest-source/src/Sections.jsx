@@ -32,7 +32,7 @@ export function ExperienceSection({ content, projectCount, size }) {
       className="bg-[#08090b] px-5 py-24 text-[#e8e6d8] sm:px-8 sm:py-32 lg:px-12 lg:py-40"
       style={{ minHeight: `${Math.max(100, size)}vh` }}
     >
-      <div className="mx-auto max-w-[1700px]">
+      <div className="portfolio-layout mx-auto max-w-[1700px]">
         <div data-motion-header className="border-t border-white/16 pt-7">
           <div data-motion-label>
             <SectionLabel index="01">Profile / Experience</SectionLabel>
@@ -80,24 +80,29 @@ export function ExperienceSection({ content, projectCount, size }) {
 
             <div
               data-motion-copy
-              className="specular-frame specular-frame--quiet mt-14 grid grid-cols-2 overflow-hidden rounded-[6px] border-y border-white/14 sm:grid-cols-4 lg:mt-20"
+              className="specular-frame specular-frame--quiet mt-14 grid grid-cols-2 overflow-hidden rounded-[6px] border border-white/14 sm:grid-cols-4 lg:mt-20"
               onPointerMove={steerSpecularEdge}
               onPointerLeave={resetSpecularEdge}
             >
               {stats.map(([value, label], index) => (
-                <div key={label} className={`py-7 sm:px-5 lg:py-9 ${index ? "border-l border-white/14" : ""}`}>
-                  <strong className="display-editorial text-4xl font-medium text-[#f1efe4] sm:text-5xl">{value}</strong>
-                  <span className="mt-3 block max-w-[11ch] text-[9px] font-bold uppercase leading-4 text-[#d0cec2]/42">{label}</span>
+                <div
+                  key={label}
+                  className={`min-h-[126px] border-white/14 p-5 sm:min-h-0 sm:px-5 lg:py-9 ${index % 2 ? "border-l" : ""} ${
+                    index >= 2 ? "border-t sm:border-t-0" : ""
+                  } ${index > 0 ? "sm:border-l" : "sm:border-l-0"}`}
+                >
+                  <strong className="display-editorial text-[40px] font-medium leading-none text-[#f1efe4] sm:text-5xl">{value}</strong>
+                  <span className="mt-4 block max-w-[12ch] text-[9px] font-bold uppercase leading-4 text-[#d0cec2]/46">{label}</span>
                 </div>
               ))}
             </div>
 
-            <div data-motion-copy className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
-              <a className="cursor-target inline-flex items-center gap-3 text-sm font-semibold text-[#f1efe4] hover:text-[#e5ff48]" href={`mailto:${content.email}`}>
-                <Mail size={16} /> {content.email}
+            <div data-motion-copy className="mt-9 grid min-w-0 gap-4 sm:mt-10 sm:flex sm:flex-row sm:items-center sm:gap-8">
+              <a className="cursor-target inline-flex min-w-0 items-center gap-3 break-all text-[13px] font-semibold text-[#f1efe4] hover:text-[#e5ff48] sm:text-sm" href={`mailto:${content.email}`}>
+                <Mail className="shrink-0" size={16} /> {content.email}
               </a>
-              <p className="inline-flex items-center gap-3 text-sm text-[#d0cec2]/52">
-                <MapPin size={16} /> {content.location}
+              <p className="inline-flex min-w-0 items-start gap-3 text-[13px] leading-6 text-[#d0cec2]/52 sm:items-center sm:text-sm">
+                <MapPin className="mt-1 shrink-0 sm:mt-0" size={16} /> <span className="min-w-0 break-words">{content.location}</span>
               </p>
             </div>
           </div>
@@ -115,7 +120,7 @@ export function ProjectsSection({ content, size }) {
       className="bg-[#0d0f12] px-5 py-24 text-[#eeeade] sm:px-8 sm:py-28 lg:px-12 lg:py-32"
       style={{ minHeight: `${Math.max(180, size)}vh` }}
     >
-      <div className="mx-auto max-w-[1700px]">
+      <div className="portfolio-layout mx-auto max-w-[1700px]">
         <div data-motion-header>
           <div className="border-t border-white/16 pt-7">
             <div data-motion-label>
@@ -179,7 +184,7 @@ export function StrengthsSection({ content, capabilities, size }) {
       className="bg-[#08090b] px-5 py-24 text-[#e8e6d8] sm:px-8 sm:py-28 lg:px-12 lg:py-32"
       style={{ minHeight: `${Math.max(110, size)}vh` }}
     >
-      <div className="mx-auto max-w-[1700px]">
+      <div className="portfolio-layout mx-auto max-w-[1700px]">
         <div data-motion-header>
           <div className="border-t border-white/16 pt-7">
             <div data-motion-label>
@@ -272,7 +277,7 @@ export function ContactSection({ content }) {
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,7,9,0.38),rgba(6,7,9,0.98)_82%)]" />
       <div className="noise-overlay absolute inset-0 opacity-25" aria-hidden="true" />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1700px]">
+      <div className="portfolio-layout relative z-10 mx-auto w-full max-w-[1700px]">
         <div data-motion-header className="border-t border-white/16 pt-7">
           <div data-motion-label>
             <SectionLabel index="04">Contact / Collaboration</SectionLabel>
