@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
+  Clapperboard,
   Copy,
   Image as ImageIcon,
   LockKeyhole,
@@ -17,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { CONTENT_STORAGE_KEY, DEFAULT_CONTENT } from "./content";
-import { AboutSection, BlogSection, ProjectsSection, ResumeSection } from "./Sections";
+import { ContactSection, ExperienceSection, ProjectsSection, StrengthsSection } from "./Sections";
 import DetailPage from "./DetailPage";
 import Galaxy from "./Galaxy";
 import { consumeHomeScrollPosition } from "./scrollPosition";
@@ -32,10 +33,10 @@ import {
 } from "./supabase";
 
 const navTargets = [
-  { key: "projects", href: "#projects" },
-  { key: "blog", href: "#blog" },
-  { key: "resume", href: "#resume" },
   { key: "about", href: "#about" },
+  { key: "projects", href: "#projects" },
+  { key: "resume", href: "#strengths" },
+  { key: "blog", href: "#contact" },
 ];
 const CONTENT_DB_NAME = "codenest-editor";
 const CONTENT_STORE_NAME = "content";
@@ -43,14 +44,86 @@ const CONTENT_RECORD_KEY = "current";
 const GALAXY_FOCAL = [0.68, 0.44];
 const GALAXY_ROTATION = [0.96, 0.18];
 
-function mergeContent(value = {}) {
-  const mergeItems = (defaults, incoming = []) =>
-    defaults.map((item, index) => ({ ...item, ...(incoming[index] || {}) }));
+const LEGACY_PROJECT_TITLES = [
+  "Ship a production-ready product",
+  "Learn inside a professional workflow",
+  "Turn the project into career proof",
+  "滔搏运动 · 全渠道运营设计与品牌升级",
+  "Volga 敷尔佳 · 品牌电商视觉规范",
+  "福瑞达集团 · 全渠道品牌视觉落地",
+];
+const LEGACY_BLOG_TITLES = [
+  "Why copying code feels fast and learning feels slow",
+  "A project becomes impressive when the decisions are visible",
+  "How to speak about unfinished work in an interview",
+];
+const LEGACY_RESUME_TITLES = [
+  "Foundations",
+  "Guided builds",
+  "Independent project",
+  "Career launch",
+  "Frontend craft",
+  "Backend systems",
+  "Team workflow",
+  "Professional growth",
+];
 
+function isLegacyAsset(value) {
+  return (
+    typeof value === "string" &&
+    (value.includes("images.unsplash.com/") ||
+      value === "https://cnlfvmxwohyvksbbtplw.supabase.co/storage/v1/object/public/portfolio-assets/projects/0/1784108822264-0de2869c-d53b-4ffb-b49c-74b2f9e62a89.webp")
+  );
+}
+
+function mergeItems(defaults, incoming = [], legacyTitles = []) {
+  return defaults.map((item, index) => {
+    const source = incoming[index] || {};
+    const hasLegacyCopy = legacyTitles.includes(source.title);
+    const gallery = Array.isArray(source.gallery) && source.gallery.length
+      ? source.gallery
+      : item.gallery;
+
+    return {
+      ...item,
+      ...source,
+      ...(hasLegacyCopy
+        ? {
+            title: item.title,
+            label: item.label,
+            category: item.category,
+            meta: item.meta,
+            metric: item.metric,
+            description: item.description,
+          }
+        : {}),
+      asset: isLegacyAsset(source.asset) ? item.asset : source.asset || item.asset,
+      gallery: gallery.every(isLegacyAsset) ? item.gallery : gallery,
+    };
+  });
+}
+
+function migratedText(value, legacyValues, fallback) {
+  return legacyValues.includes(value) || !value ? fallback : value;
+}
+
+function mergeContent(value = {}) {
   return {
     ...DEFAULT_CONTENT,
     ...value,
-    mediaMode: value.mediaMode === "image" ? "image" : "galaxy",
+    eyebrow: migratedText(value.eyebrow, ["Career-Ready Curriculum"], DEFAULT_CONTENT.eyebrow),
+    description: migratedText(
+      value.description,
+      ["Master in-demand coding skills through focused projects, expert feedback, and a portfolio designed to get you hired."],
+      DEFAULT_CONTENT.description,
+    ),
+    mediaMode: ["video", "image", "galaxy"].includes(value.mediaMode) ? value.mediaMode : DEFAULT_CONTENT.mediaMode,
+    videoUrl: migratedText(
+      value.videoUrl,
+      ["https://stream.mux.com/tLkHO1qZoaaQOUeVWo8hEBeGQfySP02EPS02BmnNFyXys.m3u8"],
+      DEFAULT_CONTENT.videoUrl,
+    ),
+    backgroundImage: value.backgroundImage || DEFAULT_CONTENT.backgroundImage,
     card: {
       ...DEFAULT_CONTENT.card,
       ...(value.card || {}),
@@ -58,6 +131,10 @@ function mergeContent(value = {}) {
     navigation: {
       ...DEFAULT_CONTENT.navigation,
       ...(value.navigation || {}),
+      projects: migratedText(value.navigation?.projects, ["PROJECTS", "工作介绍"], DEFAULT_CONTENT.navigation.projects),
+      blog: migratedText(value.navigation?.blog, ["BLOG", "工作内容"], DEFAULT_CONTENT.navigation.blog),
+      resume: migratedText(value.navigation?.resume, ["RESUME", "其他"], DEFAULT_CONTENT.navigation.resume),
+      about: migratedText(value.navigation?.about, ["ABOUT", "个人资料"], DEFAULT_CONTENT.navigation.about),
     },
     sectionSizes: {
       ...DEFAULT_CONTENT.sectionSizes,
@@ -66,21 +143,80 @@ function mergeContent(value = {}) {
     projects: {
       ...DEFAULT_CONTENT.projects,
       ...(value.projects || {}),
-      items: mergeItems(DEFAULT_CONTENT.projects.items, value.projects?.items),
+      eyebrow: migratedText(value.projects?.eyebrow, ["Project-Based Learning", "工作介绍"], DEFAULT_CONTENT.projects.eyebrow),
+      title: migratedText(
+        value.projects?.title,
+        ["Build work that proves what you can do.", "Selected projects built for real brands.", "Selected work for brands in motion."],
+        DEFAULT_CONTENT.projects.title,
+      ),
+      description: migratedText(
+        value.projects?.description,
+        ["Move from guided fundamentals to portfolio-ready products. Each project mirrors the decisions, constraints, and feedback loops of a real engineering team."],
+        DEFAULT_CONTENT.projects.description,
+      ),
+      items: mergeItems(DEFAULT_CONTENT.projects.items, value.projects?.items, LEGACY_PROJECT_TITLES),
     },
     blog: {
       ...DEFAULT_CONTENT.blog,
       ...(value.blog || {}),
-      items: mergeItems(DEFAULT_CONTENT.blog.items, value.blog?.items),
+      eyebrow: migratedText(value.blog?.eyebrow, ["Field Notes"], DEFAULT_CONTENT.blog.eyebrow),
+      title: migratedText(
+        value.blog?.title,
+        ["Clear thinking for the work between lessons.", "Design is a business tool, not a surface treatment.", "Strategy, systems and AI in one design practice."],
+        DEFAULT_CONTENT.blog.title,
+      ),
+      description: migratedText(
+        value.blog?.description,
+        ["Short, practical notes on building, debugging, collaborating, and becoming easier to hire."],
+        DEFAULT_CONTENT.blog.description,
+      ),
+      items: mergeItems(DEFAULT_CONTENT.blog.items, value.blog?.items, LEGACY_BLOG_TITLES),
     },
     resume: {
       ...DEFAULT_CONTENT.resume,
       ...(value.resume || {}),
-      items: mergeItems(DEFAULT_CONTENT.resume.items, value.resume?.items),
+      eyebrow: migratedText(value.resume?.eyebrow, ["The Learning Path"], DEFAULT_CONTENT.resume.eyebrow),
+      title: migratedText(
+        value.resume?.title,
+        ["A curriculum that moves from understanding to ownership.", "A hybrid design practice across brand, commerce and AI.", "Brand thinking meets commercial execution."],
+        DEFAULT_CONTENT.resume.title,
+      ),
+      description: migratedText(
+        value.resume?.description,
+        ["Each stage reduces support and increases responsibility, so confidence grows from evidence rather than motivation alone."],
+        DEFAULT_CONTENT.resume.description,
+      ),
+      items: mergeItems(DEFAULT_CONTENT.resume.items, value.resume?.items, LEGACY_RESUME_TITLES),
     },
     about: {
       ...DEFAULT_CONTENT.about,
       ...(value.about || {}),
+      eyebrow: migratedText(value.about?.eyebrow, ["Personal Introduction"], DEFAULT_CONTENT.about.eyebrow),
+      title: migratedText(
+        value.about?.title,
+        ["Design is not only aesthetics, but a visual carrier to convey brand core values and personality."],
+        DEFAULT_CONTENT.about.title,
+      ),
+      role: migratedText(
+        value.about?.role,
+        ["Founder / Lead Instructor", "Every Detail Builds Personality"],
+        DEFAULT_CONTENT.about.role,
+      ),
+      bio: migratedText(
+        value.about?.bio,
+        ["CodeNest was built around a simple belief: people learn faster when the work feels real, the feedback is specific, and the path is calm enough to follow. Replace this text with your own background, teaching philosophy, experience, and the kind of students or clients you want to work with."],
+        DEFAULT_CONTENT.about.bio,
+      ),
+      email: migratedText(value.about?.email, ["hello@codenest.dev"], DEFAULT_CONTENT.about.email),
+      location: migratedText(value.about?.location, ["Remote / Worldwide"], DEFAULT_CONTENT.about.location),
+      image:
+        value.about?.image === "https://cnlfvmxwohyvksbbtplw.supabase.co/storage/v1/object/public/portfolio-assets/about/1784108950962-f6f94c8f-1b9f-4307-af1b-ee934d7f89a0.webp"
+          ? DEFAULT_CONTENT.about.image
+          : value.about?.image || DEFAULT_CONTENT.about.image,
+      gallery:
+        Array.isArray(value.about?.gallery) && value.about.gallery.length && !value.about.gallery.every(isLegacyAsset)
+          ? value.about.gallery
+          : DEFAULT_CONTENT.about.gallery,
     },
   };
 }
@@ -237,8 +373,63 @@ function useReducedMotion() {
   return reducedMotion;
 }
 
+function VideoBackground({ source, poster, reducedMotion }) {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || reducedMotion || !source) return undefined;
+    let hls;
+    let cancelled = false;
+
+    if (source.includes(".m3u8")) {
+      import("hls.js").then(({ default: Hls }) => {
+        if (cancelled) return;
+        if (Hls.isSupported()) {
+          hls = new Hls({ enableWorker: false, lowLatencyMode: false });
+          hls.loadSource(source);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => undefined));
+        } else {
+          video.src = source;
+          video.play().catch(() => undefined);
+        }
+      });
+    } else {
+      video.src = source;
+      video.play().catch(() => undefined);
+    }
+
+    return () => {
+      cancelled = true;
+      hls?.destroy();
+    };
+  }, [reducedMotion, source]);
+
+  if (reducedMotion) {
+    return <img className="absolute inset-0 h-full w-full object-cover" src={poster} alt="" aria-hidden="true" />;
+  }
+
+  return (
+    <video
+      ref={videoRef}
+      className="absolute inset-0 h-full w-full object-cover"
+      poster={poster}
+      autoPlay
+      loop
+      muted
+      playsInline
+      aria-hidden="true"
+    />
+  );
+}
+
 function BackgroundMedia({ content }) {
   const reducedMotion = useReducedMotion();
+
+  if (content.mediaMode === "video" && content.videoUrl) {
+    return <VideoBackground source={content.videoUrl} poster={content.backgroundImage || DEFAULT_CONTENT.backgroundImage} reducedMotion={reducedMotion} />;
+  }
 
   if (content.mediaMode === "image" && content.backgroundImage) {
     return (
@@ -277,12 +468,12 @@ function BackgroundMedia({ content }) {
 
 function Logo({ brand, logoImage }) {
   return (
-    <a className="group flex min-w-0 items-center gap-3 text-[#090909]" href="#top" aria-label={`${brand} home`}>
-      <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden bg-[#090909] font-mono text-[10px] font-black text-white">
+    <a className="group flex min-w-0 items-center gap-3 text-[#f1efe4]" href="#top" aria-label={`${brand} home`}>
+      <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-[4px] border border-white/20 bg-white/8 font-mono text-[10px] font-black text-white backdrop-blur-md">
         {logoImage ? <img className="h-full w-full object-cover" src={logoImage} alt="" /> : "A/P"}
-        {!logoImage && <span className="absolute right-1 top-1 size-2 bg-[#f5ea28] transition-transform duration-300 group-hover:scale-125" />}
+        {!logoImage && <span className="absolute right-1 top-1 size-2 bg-[#e5ff48] transition-transform duration-300 group-hover:scale-125" />}
       </span>
-      <span className="max-w-56 truncate text-[15px] font-black tracking-[0]">{brand}</span>
+      <span className="max-w-56 truncate text-[14px] font-bold tracking-[0]">{brand}</span>
     </a>
   );
 }
@@ -305,14 +496,14 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b-2 border-[#090909] bg-[#f7f7f2]/94 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-[1520px] items-center justify-between px-5 sm:px-8 lg:px-10">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/12 bg-[#07080a]/56 text-[#f1efe4] backdrop-blur-xl">
+        <div className="mx-auto flex h-[84px] max-w-[1700px] items-center justify-between px-5 sm:px-8 lg:px-12">
           <Logo brand={brand} logoImage={logoImage} />
-          <nav className="hidden items-center gap-9 md:flex" aria-label="Primary navigation">
+          <nav className="hidden items-center gap-8 lg:flex" aria-label="Primary navigation">
             {items.map((item) => (
               <a
                 key={item.key}
-                className="max-w-36 truncate px-2 py-2 text-[13px] font-black uppercase text-[#090909] transition-colors duration-200 hover:bg-[#f5ea28] focus-visible:bg-[#f5ea28]"
+                className="max-w-36 truncate py-2 text-[11px] font-bold uppercase text-white/58 transition-colors duration-200 hover:text-[#e5ff48] focus-visible:text-[#e5ff48]"
                 href={item.href}
                 title={item.label}
               >
@@ -320,22 +511,27 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
               </a>
             ))}
           </nav>
-          <button
-            className="grid size-11 place-items-center border-2 border-[#090909] bg-[#090909] text-white md:hidden"
-            type="button"
-            aria-label={isOpen ? "Close navigation" : "Open navigation"}
-            aria-expanded={isOpen}
-            aria-controls="mobile-menu"
-            onClick={onToggle}
-          >
-            {isOpen ? <X size={25} strokeWidth={1.7} /> : <Menu size={25} strokeWidth={1.7} />}
-          </button>
+          <div className="flex items-center gap-2">
+            <a className="hidden min-h-11 items-center gap-3 rounded-full bg-[#e5ff48] px-5 text-[10px] font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-0.5 sm:inline-flex" href="#contact">
+              Contact <ArrowRight size={15} />
+            </a>
+            <button
+              className="grid size-11 place-items-center rounded-full border border-white/20 bg-black/20 text-white lg:hidden"
+              type="button"
+              aria-label={isOpen ? "Close navigation" : "Open navigation"}
+              aria-expanded={isOpen}
+              aria-controls="mobile-menu"
+              onClick={onToggle}
+            >
+              {isOpen ? <X size={22} strokeWidth={1.7} /> : <Menu size={22} strokeWidth={1.7} />}
+            </button>
+          </div>
         </div>
       </header>
 
       <div
         id="mobile-menu"
-        className={`fixed inset-0 z-40 flex bg-[#f7f7f2] px-5 pb-8 pt-28 transition-[opacity,visibility] duration-300 md:hidden ${
+        className={`fixed inset-0 z-40 flex bg-[#08090b] px-5 pb-8 pt-28 text-white transition-[opacity,visibility] duration-300 lg:hidden ${
           isOpen ? "visible opacity-100" : "invisible opacity-0"
         }`}
         aria-hidden={!isOpen}
@@ -345,16 +541,16 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
             {items.map((item, index) => (
               <a
                 key={item.key}
-                className="mb-2 flex items-center justify-between border-2 border-[#090909] bg-white px-5 py-5 text-2xl font-black text-[#090909] transition-colors hover:bg-[#f5ea28]"
+                className="mb-1 flex items-center justify-between border-b border-white/14 px-1 py-6 text-3xl font-semibold text-[#f1efe4] transition-colors hover:text-[#e5ff48]"
                 href={item.href}
                 onClick={onClose}
               >
                 <span className="min-w-0 break-words pr-4">{item.label}</span>
-                <span className="font-jakarta text-[10px] text-[#090909]">0{index + 1}</span>
+                <span className="font-mono text-[10px] text-white/36">0{index + 1}</span>
               </a>
             ))}
             <button
-              className="mt-2 flex items-center justify-between border-2 border-[#090909] bg-[#090909] px-5 py-5 text-left text-xl font-black text-white transition-colors hover:bg-[#f5ea28] hover:text-[#090909]"
+              className="mt-8 flex items-center justify-between rounded-[4px] border border-white/14 bg-white/5 px-5 py-5 text-left text-base font-semibold text-white transition-colors hover:border-[#e5ff48] hover:text-[#e5ff48]"
               type="button"
               onClick={() => {
                 onClose();
@@ -368,8 +564,8 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
               <span className="font-jakarta text-[10px]">ADMIN</span>
             </button>
           </div>
-          <p className="max-w-64 text-xs font-bold leading-5 text-[#090909]/48">
-            Build the skills. Ship the work. Start the career.
+          <p className="max-w-72 text-xs font-medium leading-6 text-white/38">
+            Visual Designer / AI Designer / Brand Designer
           </p>
         </nav>
       </div>
@@ -630,7 +826,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
   return (
     <>
       <button
-        className="fixed bottom-5 right-5 z-30 hidden size-14 place-items-center border-4 border-[#090909] bg-[#f5ea28] text-[#090909] shadow-2xl transition-colors hover:bg-[#090909] hover:text-white md:grid"
+        className="fixed bottom-5 right-5 z-30 hidden size-12 place-items-center rounded-full border border-white/20 bg-black/52 text-white shadow-2xl backdrop-blur-md transition-colors hover:border-[#e5ff48] hover:text-[#e5ff48] md:grid"
         type="button"
         title="Edit content"
         aria-label="Edit page content"
@@ -741,11 +937,22 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                   </EditorGroup>
 
                   <EditorGroup title="Hero section">
-                    <div className="grid grid-cols-2 gap-2" aria-label="Background type">
+                    <div className="grid grid-cols-3 gap-2" aria-label="Background type">
                       <button
                         className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
-                          draft.mediaMode !== "image"
-                            ? "border-[#f5ea28] bg-[#f5ea28] text-[#090909]"
+                          draft.mediaMode === "video"
+                            ? "border-[#e5ff48] bg-[#e5ff48] text-[#090909]"
+                            : "border-white/15 text-white/65"
+                        }`}
+                        type="button"
+                        onClick={() => update("mediaMode", "video")}
+                      >
+                        <Clapperboard size={15} /> Video
+                      </button>
+                      <button
+                        className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
+                          draft.mediaMode === "galaxy"
+                            ? "border-[#e5ff48] bg-[#e5ff48] text-[#090909]"
                             : "border-white/15 text-white/65"
                         }`}
                         type="button"
@@ -756,7 +963,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                       <button
                         className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
                           draft.mediaMode === "image"
-                            ? "border-[#f5ea28] bg-[#f5ea28] text-[#090909]"
+                            ? "border-[#e5ff48] bg-[#e5ff48] text-[#090909]"
                             : "border-white/15 text-white/65"
                         }`}
                         type="button"
@@ -765,6 +972,14 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                         <ImageIcon size={15} /> Image
                       </button>
                     </div>
+
+                    {draft.mediaMode === "video" && (
+                      <Field
+                        label="Background video URL (MP4 or HLS)"
+                        value={draft.videoUrl || ""}
+                        onChange={(event) => update("videoUrl", event.target.value)}
+                      />
+                    )}
 
                     {draft.mediaMode === "image" && (
                       <>
@@ -1242,11 +1457,6 @@ function App() {
     return DEFAULT_CONTENT;
   };
 
-  const galleryCount = content.projects.items.reduce(
-    (total, item) => total + Math.max(1, item.gallery?.length || 0),
-    0,
-  );
-
   if (detailId) {
     return (
       <>
@@ -1266,8 +1476,16 @@ function App() {
   }
 
   return (
-    <main id="top" className="min-h-[100dvh] overflow-x-clip bg-[#d9d9d5] text-[#090909]">
-      <div className="relative min-h-[100dvh] overflow-hidden bg-[#f4b44e]">
+    <main id="top" className="min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]">
+      <section className="relative min-h-[100dvh] overflow-hidden bg-[#08090b]">
+        <div className="absolute inset-0 opacity-60">
+          <BackgroundMedia content={content} />
+        </div>
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,6,8,0.92)_0%,rgba(5,6,8,0.42)_52%,rgba(5,6,8,0.66)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.2)_0%,rgba(5,6,8,0.12)_40%,rgba(5,6,8,0.94)_100%)]" />
+        <div className="noise-overlay absolute inset-0 opacity-35" aria-hidden="true" />
+        <div className="hero-grid absolute inset-0" aria-hidden="true" />
+
         <Navigation
           brand={content.brand}
           logoImage={content.logoImage}
@@ -1278,94 +1496,44 @@ function App() {
           onEdit={openEditor}
         />
 
-        <section className="relative z-10 mx-auto min-h-[100dvh] max-w-[1540px] px-0 pb-0 pt-20 sm:px-5 sm:pb-10 sm:pt-24 lg:px-8 lg:pb-14">
-          <div className="editorial-shell relative overflow-hidden bg-[#f7f7f2] shadow-[0_28px_90px_rgba(91,55,0,0.24)]">
-            <div className="relative px-5 pb-10 pt-10 sm:px-9 sm:pb-12 sm:pt-12 lg:px-16 lg:pb-14 lg:pt-14">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <span className="inline-flex min-h-8 items-center bg-[#090909] px-3 font-jakarta text-[10px] font-black uppercase text-white">
-                  {content.eyebrow}
-                </span>
-                <a
-                  className="group inline-flex min-h-11 items-center gap-3 rounded-full bg-[#f5ea28] px-5 text-[11px] font-black uppercase text-[#090909] transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#090909]"
-                  href="#projects"
-                >
+        <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-[1700px] flex-col justify-end px-5 pb-9 pt-32 sm:px-8 sm:pb-12 lg:px-12 lg:pb-14">
+          <div className="max-w-[1500px]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-7">
+              <span className="text-[10px] font-bold uppercase text-[#e5ff48]">{content.eyebrow}</span>
+              <span className="hidden h-px w-16 bg-white/28 sm:block" />
+              <span className="text-[10px] font-bold uppercase text-white/46">Shanghai · Available 2026</span>
+            </div>
+
+            <h1 className="display-editorial mt-7 max-w-[12ch] text-[56px] leading-[0.84] text-[#f1efe4] sm:text-[82px] lg:text-[118px] xl:text-[150px] 2xl:text-[164px]">
+              {content.headline}<span className="text-[#e5ff48]">.</span>
+            </h1>
+
+            <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_0.72fr] lg:items-end lg:gap-20">
+              <p className="max-w-2xl text-sm leading-7 text-white/58 sm:text-base sm:leading-8">{content.description}</p>
+              <div className="flex flex-wrap gap-3 lg:justify-self-end">
+                <a className="group inline-flex min-h-14 items-center gap-5 rounded-full bg-[#e5ff48] px-6 text-[11px] font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-1" href="#projects">
                   {content.ctaLabel}
-                  <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" size={16} />
+                  <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} />
+                </a>
+                <a className="inline-flex min-h-14 items-center gap-3 rounded-full border border-white/24 bg-black/16 px-6 text-[11px] font-bold uppercase text-white backdrop-blur-md transition-colors hover:border-white/54" href={`mailto:${content.about.email}`}>
+                  Contact me
                 </a>
               </div>
-
-              <h1 className="display-rounded mt-8 max-w-[12ch] text-[54px] uppercase leading-[0.8] text-[#090909] sm:text-[72px] lg:max-w-none lg:text-[92px] xl:text-[108px]">
-                {content.headline}<span className="text-[#d4c600]">.</span>
-              </h1>
             </div>
 
-            <div className="relative min-h-[560px] overflow-hidden bg-[#050505] sm:min-h-[640px] lg:min-h-[70vh]">
-              <BackgroundMedia content={content} />
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.72),rgba(0,0,0,0.06)_48%,rgba(0,0,0,0.56))]" />
-
-              <aside className="absolute left-5 top-5 z-30 max-w-[270px] border-2 border-white/70 bg-black/62 p-5 text-white backdrop-blur-md sm:left-8 sm:top-8 sm:p-6">
-                <p className="font-jakarta text-[11px] font-black text-[#f5ea28]">{content.card.year}</p>
-                <h2 className="mt-12 text-xl font-black leading-[1.02]">
-                  {content.card.lead} <span className="font-instrument inline-block pb-1 text-2xl font-normal italic leading-[1.1]">{content.card.accent}</span> {content.card.tail}
-                </h2>
-                <p className="mt-4 text-[11px] leading-5 text-white/62">{content.card.description}</p>
-              </aside>
-
-              <div className="pointer-events-none absolute right-5 top-5 z-30 hidden items-center sm:flex sm:right-8 sm:top-8" aria-hidden="true">
-                {content.projects.items.slice(0, 2).map((item, index) => (
-                  <div key={item.index} className={`size-20 overflow-hidden rounded-full border-[5px] border-white bg-[#090909] lg:size-24 ${index ? "-ml-4" : ""}`}>
-                    <img className="h-full w-full object-cover" src={item.asset} alt="" />
-                  </div>
-                ))}
-              </div>
-
-              <div className="absolute left-1/2 top-[48%] z-10 h-[58%] w-[82%] -translate-x-1/2 -translate-y-1/2 rotate-[-3deg] border-2 border-dashed border-white/70 p-2 sm:h-[66%] sm:w-[64%] sm:p-3 lg:w-[54%]">
-                <div className="h-full overflow-hidden border-[7px] border-[#f5ea28] bg-[#111] sm:border-[10px]">
-                  <img className="h-full w-full object-cover transition-transform duration-700 hover:scale-[1.025]" src={content.projects.items[0]?.asset} alt={content.projects.items[0]?.title || "Featured project"} />
-                </div>
-              </div>
-
-              <div className="absolute inset-x-[-6%] bottom-20 z-20 flex rotate-[-4deg] bg-[#48dce7] text-[#090909]">
-                {[...content.projects.items, ...content.projects.items].map((item, index) => (
-                  <span key={`hero-cyan-${item.index}-${index}`} className="shrink-0 border-r-2 border-[#090909] px-7 py-3 text-xs font-black uppercase sm:px-10 sm:text-sm">
-                    {item.label}
-                  </span>
-                ))}
-              </div>
-              <div className="absolute inset-x-[-6%] bottom-7 z-20 flex rotate-[3deg] bg-[#f5ea28] text-[#090909]">
-                {[...content.projects.items].reverse().concat(content.projects.items).map((item, index) => (
-                  <span key={`hero-yellow-${item.index}-${index}`} className="shrink-0 border-r-2 border-[#090909] px-7 py-3 text-xs font-black uppercase sm:px-10 sm:text-sm">
-                    {item.metric}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid border-t-2 border-[#090909] bg-white lg:grid-cols-[1.05fr_0.95fr]">
-              <div className="border-b-2 border-[#090909] p-6 sm:p-9 lg:border-b-0 lg:border-r-2 lg:p-12">
-                <p className="max-w-2xl text-sm leading-7 text-[#090909]/66 sm:text-base sm:leading-8">{content.description}</p>
-              </div>
-              <div className="grid grid-cols-3 divide-x-2 divide-[#090909]">
-                {[
-                  [String(content.projects.items.length).padStart(2, "0"), "Projects"],
-                  [String(content.resume.items.length).padStart(2, "0"), "Capabilities"],
-                  [String(galleryCount).padStart(2, "0"), "Gallery pages"],
-                ].map(([value, label]) => (
-                  <div key={label} className="flex min-h-32 flex-col justify-center px-3 text-center sm:min-h-40 sm:px-5">
-                    <strong className="display-rounded text-3xl leading-none sm:text-5xl">{value}</strong>
-                    <span className="mt-3 text-[9px] font-black uppercase text-[#090909]/50 sm:text-[10px]">{label}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="mt-10 grid gap-5 border-t border-white/16 pt-6 text-[10px] font-bold uppercase text-white/38 sm:grid-cols-3 lg:mt-14">
+              <span>{content.card.year}</span>
+              <span className="sm:text-center">{content.about.role}</span>
+              <span className="sm:text-right">Scroll to explore ↓</span>
             </div>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
+      <ExperienceSection content={content.about} projectCount={content.projects.items.length} size={content.sectionSizes.about} />
       <ProjectsSection content={content.projects} size={content.sectionSizes.projects} />
-      <BlogSection content={content.blog} size={content.sectionSizes.blog} />
-      <ResumeSection content={content.resume} size={content.sectionSizes.resume} />
-      <AboutSection content={content.about} size={content.sectionSizes.about} />
+      <StrengthsSection content={content.blog} capabilities={content.resume} size={Math.max(content.sectionSizes.blog, content.sectionSizes.resume)} />
+      <ContactSection content={content.about} />
       <ContentEditor
         content={content}
         session={session}
