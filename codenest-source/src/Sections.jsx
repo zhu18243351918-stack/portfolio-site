@@ -142,7 +142,7 @@ export function ProjectsSection({ content, size }) {
             <article
               key={item.index}
               data-motion-card
-              className="cursor-target specular-frame project-feature group relative min-h-[480px] overflow-hidden rounded-[6px] bg-[#15171b] sm:min-h-[680px] lg:min-h-[min(82vh,920px)]"
+              className="cursor-target specular-frame project-feature group relative mx-auto min-h-[480px] w-full max-w-[1200px] overflow-hidden rounded-[6px] bg-[#111317] sm:min-h-[600px] lg:h-[min(64dvh,720px)] lg:min-h-[640px]"
               onPointerMove={steerSpecularEdge}
               onPointerLeave={resetSpecularEdge}
             >
@@ -152,14 +152,14 @@ export function ProjectsSection({ content, size }) {
                 aria-label={`Open ${item.title} gallery`}
                 onClick={rememberHomeScrollPosition}
               >
-                <img data-parallax className="media-zoom absolute inset-x-0 h-full w-full object-cover" src={item.asset} alt={item.title} />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.08)_25%,rgba(5,6,8,0.88)_100%)]" />
+                <img className="project-media absolute inset-0 h-full w-full object-cover lg:object-contain" src={item.asset} alt={item.title} />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.04)_18%,rgba(5,6,8,0.16)_54%,rgba(5,6,8,0.96)_100%)]" />
                 <div className="absolute inset-x-6 top-6 flex items-center justify-between text-[10px] font-bold uppercase text-white/68 sm:inset-x-9 sm:top-9">
                   <span>{item.index} / {item.label}</span>
                   <span className="hidden sm:block">{item.metric}</span>
                 </div>
-                <div className="absolute inset-x-6 bottom-6 grid gap-5 sm:inset-x-9 sm:bottom-9 lg:grid-cols-[1.2fr_0.8fr] lg:items-end lg:gap-12">
-                  <h3 className="display-editorial max-w-[16ch] text-4xl leading-[0.94] text-white sm:text-6xl lg:text-[66px] xl:text-[76px]">{item.title}</h3>
+                <div className="absolute inset-x-6 bottom-7 grid gap-7 sm:inset-x-9 sm:bottom-10 lg:grid-cols-[1fr_0.72fr] lg:items-end lg:gap-16">
+                  <h3 className="display-editorial max-w-[18ch] text-[36px] leading-[1.08] text-white sm:text-[48px] lg:text-[54px] xl:text-[62px]">{item.title}</h3>
                   <div className="flex items-end justify-between gap-5 lg:justify-self-end">
                     <p className="hidden max-w-lg text-sm leading-7 text-white/62 sm:block">{item.description}</p>
                     <span className="grid size-14 shrink-0 place-items-center rounded-full bg-[#e5ff48] text-[#090a0c] transition-transform duration-500 group-hover:rotate-45 group-hover:scale-105">
