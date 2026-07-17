@@ -1,5 +1,13 @@
 const HOME_SCROLL_POSITION_KEY = "codenest-home-scroll-position";
 
+export function storeHomeScrollPosition() {
+  try {
+    window.sessionStorage.setItem(HOME_SCROLL_POSITION_KEY, String(window.scrollY));
+  } catch {
+    // Returning to the page still works when session storage is unavailable.
+  }
+}
+
 export function rememberHomeScrollPosition(event) {
   if (
     event?.defaultPrevented ||
@@ -12,11 +20,7 @@ export function rememberHomeScrollPosition(event) {
     return;
   }
 
-  try {
-    window.sessionStorage.setItem(HOME_SCROLL_POSITION_KEY, String(window.scrollY));
-  } catch {
-    // Returning to the page still works when session storage is unavailable.
-  }
+  storeHomeScrollPosition();
 }
 
 export function consumeHomeScrollPosition() {

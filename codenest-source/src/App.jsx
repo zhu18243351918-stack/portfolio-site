@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
@@ -19,9 +19,10 @@ import {
 } from "lucide-react";
 import { CONTENT_STORAGE_KEY, DEFAULT_CONTENT } from "./content";
 import { ContactSection, ExperienceSection, ProjectsSection, StrengthsSection } from "./Sections";
+import { setupHomeAnimations, shouldPlayOpening } from "./animations";
 import DetailPage from "./DetailPage";
 import Galaxy from "./Galaxy";
-import { consumeHomeScrollPosition } from "./scrollPosition";
+import { consumeHomeScrollPosition, storeHomeScrollPosition } from "./scrollPosition";
 import {
   fetchRemoteContent,
   getAdminSession,
@@ -496,7 +497,7 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/12 bg-[#07080a]/56 text-[#f1efe4] backdrop-blur-xl">
+      <header data-hero-nav className="fixed inset-x-0 top-0 z-50 border-b border-white/12 bg-[#07080a]/56 text-[#f1efe4] backdrop-blur-xl">
         <div className="mx-auto flex h-[84px] max-w-[1700px] items-center justify-between px-5 sm:px-8 lg:px-12">
           <Logo brand={brand} logoImage={logoImage} />
           <nav className="hidden items-center gap-8 lg:flex" aria-label="Primary navigation">
@@ -1291,12 +1292,25 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
 
 function App() {
   const detailId = new URLSearchParams(window.location.search).get("detail");
+  const pageRef = useRef(null);
+  const playOpeningRef = useRef(shouldPlayOpening());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [content, setContent] = useState(readInitialContent);
   const [session, setSession] = useState(null);
   const [cloudStatus, setCloudStatus] = useState("connecting");
   const [isContentReady, setIsContentReady] = useState(false);
   const openEditor = () => window.dispatchEvent(new Event("codenest:open-editor"));
+
+  useLayoutEffect(() => {
+    if (detailId) return undefined;
+    return setupHomeAnimations(pageRef.current, { playOpening: playOpeningRef.current });
+  }, [detailId]);
+
+  useEffect(() => {
+    if (detailId) return undefined;
+    window.addEventListener("pagehide", storeHomeScrollPosition);
+    return () => window.removeEventListener("pagehide", storeHomeScrollPosition);
+  }, [detailId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1476,9 +1490,19 @@ function App() {
   }
 
   return (
-    <main id="top" className="min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]">
-      <section className="relative min-h-[100dvh] overflow-hidden bg-[#08090b]">
-        <div className="absolute inset-0 opacity-60">
+    <main ref={pageRef} id="top" className="min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]">
+      <div data-opening className="opening-curtain" aria-hidden="true">
+        <div className="opening-lockup">
+          <div data-opening-mark className="opening-mark">
+            <span>Anthony</span>
+            <span>Visual / AI / Brand Designer</span>
+          </div>
+          <span data-opening-rule className="opening-rule" />
+        </div>
+      </div>
+
+      <section data-hero className="relative min-h-[100dvh] overflow-hidden bg-[#08090b]">
+        <div data-hero-media className="absolute inset-0 opacity-60">
           <BackgroundMedia content={content} />
         </div>
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,6,8,0.92)_0%,rgba(5,6,8,0.42)_52%,rgba(5,6,8,0.66)_100%)]" />
@@ -1498,19 +1522,29 @@ function App() {
 
         <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-[1700px] flex-col justify-end px-5 pb-9 pt-32 sm:px-8 sm:pb-12 lg:px-12 lg:pb-14">
           <div className="max-w-[1500px]">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-7">
+            <div data-hero-meta className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-7">
               <span className="text-[10px] font-bold uppercase text-[#e5ff48]">{content.eyebrow}</span>
               <span className="hidden h-px w-16 bg-white/28 sm:block" />
               <span className="text-[10px] font-bold uppercase text-white/46">Shanghai · Available 2026</span>
             </div>
 
-            <h1 className="display-editorial mt-7 max-w-[12ch] text-[56px] leading-[0.84] text-[#f1efe4] sm:text-[82px] lg:text-[118px] xl:text-[150px] 2xl:text-[164px]">
-              {content.headline}<span className="text-[#e5ff48]">.</span>
+            <h1 className="display-editorial mt-7 max-w-[13ch] text-[56px] leading-[0.84] text-[#f1efe4] sm:text-[82px] lg:text-[118px] xl:text-[150px] 2xl:text-[164px]">
+              {content.headline.trim().split(/\s+/).map((word, index, words) => (
+                <span key={`${word}-${index}`}>
+                  <span className="hero-word-mask">
+                    <span data-hero-word className="hero-word">
+                      {word}
+                      {index === words.length - 1 && <span data-hero-period className="inline-block text-[#e5ff48]">.</span>}
+                    </span>
+                  </span>
+                  {index < words.length - 1 ? " " : ""}
+                </span>
+              ))}
             </h1>
 
             <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_0.72fr] lg:items-end lg:gap-20">
-              <p className="max-w-2xl text-sm leading-7 text-white/58 sm:text-base sm:leading-8">{content.description}</p>
-              <div className="flex flex-wrap gap-3 lg:justify-self-end">
+              <p data-hero-copy className="max-w-2xl text-sm leading-7 text-white/58 sm:text-base sm:leading-8">{content.description}</p>
+              <div data-hero-cta className="flex flex-wrap gap-3 lg:justify-self-end">
                 <a className="group inline-flex min-h-14 items-center gap-5 rounded-full bg-[#e5ff48] px-6 text-[11px] font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-1" href="#projects">
                   {content.ctaLabel}
                   <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} />
@@ -1521,10 +1555,10 @@ function App() {
               </div>
             </div>
 
-            <div className="mt-10 grid gap-5 border-t border-white/16 pt-6 text-[10px] font-bold uppercase text-white/38 sm:grid-cols-3 lg:mt-14">
+            <div data-hero-foot className="mt-10 grid gap-5 border-t border-white/16 pt-6 text-[10px] font-bold uppercase text-white/38 sm:grid-cols-3 lg:mt-14">
               <span>{content.card.year}</span>
               <span className="sm:text-center">{content.about.role}</span>
-              <span className="sm:text-right">Scroll to explore ↓</span>
+              <span className="sm:text-right">Selected work / Brand systems</span>
             </div>
           </div>
         </div>
