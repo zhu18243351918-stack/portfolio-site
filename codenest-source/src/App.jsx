@@ -277,12 +277,12 @@ function BackgroundMedia({ content }) {
 
 function Logo({ brand, logoImage }) {
   return (
-    <a className="group flex min-w-0 items-center gap-3 text-[#ece9df]" href="#top" aria-label={`${brand} home`}>
-      <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-[14px] bg-[#d6d8d2] font-mono text-[10px] font-black text-[#182019]">
+    <a className="group flex min-w-0 items-center gap-3 text-[#090909]" href="#top" aria-label={`${brand} home`}>
+      <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden bg-[#090909] font-mono text-[10px] font-black text-white">
         {logoImage ? <img className="h-full w-full object-cover" src={logoImage} alt="" /> : "A/P"}
-        {!logoImage && <span className="absolute right-1 top-1 size-2 rounded-full bg-[#cf4c3e] transition-transform duration-300 group-hover:scale-125" />}
+        {!logoImage && <span className="absolute right-1 top-1 size-2 bg-[#f5ea28] transition-transform duration-300 group-hover:scale-125" />}
       </span>
-      <span className="max-w-56 truncate text-[15px] font-bold tracking-[0]">{brand}</span>
+      <span className="max-w-56 truncate text-[15px] font-black tracking-[0]">{brand}</span>
     </a>
   );
 }
@@ -305,14 +305,14 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#090c0a]/78 backdrop-blur-xl">
+      <header className="fixed inset-x-0 top-0 z-50 border-b-2 border-[#090909] bg-[#f7f7f2]/94 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-[1520px] items-center justify-between px-5 sm:px-8 lg:px-10">
           <Logo brand={brand} logoImage={logoImage} />
           <nav className="hidden items-center gap-9 md:flex" aria-label="Primary navigation">
             {items.map((item) => (
               <a
                 key={item.key}
-                className="max-w-36 truncate text-[15px] font-semibold text-[#ece9df] transition-colors duration-200 hover:text-[#df6254] focus-visible:text-[#df6254]"
+                className="max-w-36 truncate px-2 py-2 text-[13px] font-black uppercase text-[#090909] transition-colors duration-200 hover:bg-[#f5ea28] focus-visible:bg-[#f5ea28]"
                 href={item.href}
                 title={item.label}
               >
@@ -321,7 +321,7 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
             ))}
           </nav>
           <button
-            className="grid size-11 place-items-center rounded-full border border-white/15 text-[#ece9df] md:hidden"
+            className="grid size-11 place-items-center border-2 border-[#090909] bg-[#090909] text-white md:hidden"
             type="button"
             aria-label={isOpen ? "Close navigation" : "Open navigation"}
             aria-expanded={isOpen}
@@ -335,7 +335,7 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
 
       <div
         id="mobile-menu"
-        className={`fixed inset-0 z-40 flex bg-[#090c0a] px-5 pb-8 pt-28 transition-[opacity,visibility] duration-300 md:hidden ${
+        className={`fixed inset-0 z-40 flex bg-[#f7f7f2] px-5 pb-8 pt-28 transition-[opacity,visibility] duration-300 md:hidden ${
           isOpen ? "visible opacity-100" : "invisible opacity-0"
         }`}
         aria-hidden={!isOpen}
@@ -345,16 +345,16 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
             {items.map((item, index) => (
               <a
                 key={item.key}
-                className="module-card mb-2 flex items-center justify-between bg-[#171c18] px-5 py-5 text-2xl font-extrabold text-[#ece9df] transition-colors hover:bg-[#415241]"
+                className="mb-2 flex items-center justify-between border-2 border-[#090909] bg-white px-5 py-5 text-2xl font-black text-[#090909] transition-colors hover:bg-[#f5ea28]"
                 href={item.href}
                 onClick={onClose}
               >
                 <span className="min-w-0 break-words pr-4">{item.label}</span>
-                <span className="font-jakarta text-[10px] text-[#df6254]">0{index + 1}</span>
+                <span className="font-jakarta text-[10px] text-[#090909]">0{index + 1}</span>
               </a>
             ))}
             <button
-              className="module-card mt-2 flex items-center justify-between bg-[#ece9df] px-5 py-5 text-left text-xl font-extrabold text-[#172018] transition-colors hover:bg-white"
+              className="mt-2 flex items-center justify-between border-2 border-[#090909] bg-[#090909] px-5 py-5 text-left text-xl font-black text-white transition-colors hover:bg-[#f5ea28] hover:text-[#090909]"
               type="button"
               onClick={() => {
                 onClose();
@@ -365,10 +365,10 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
                 <Settings size={20} />
                 Edit content
               </span>
-              <span className="font-jakarta text-[10px] text-[#cf4c3e]">ADMIN</span>
+              <span className="font-jakarta text-[10px]">ADMIN</span>
             </button>
           </div>
-          <p className="max-w-64 text-xs leading-5 text-white/45">
+          <p className="max-w-64 text-xs font-bold leading-5 text-[#090909]/48">
             Build the skills. Ship the work. Start the career.
           </p>
         </nav>
@@ -377,30 +377,9 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
   );
 }
 
-function GlassCard({ content }) {
-  return (
-    <aside className="module-card module-outline flex min-h-[210px] flex-col justify-between bg-[#415241] p-5 text-[#ece9df] sm:p-6">
-      <div className="flex h-full flex-col justify-between">
-        <div className="flex items-start justify-between gap-4">
-          <span className="font-jakarta text-[14px] font-bold text-white/75">{content.year}</span>
-          <span className="size-3 rounded-full bg-[#cf4c3e]" aria-hidden="true" />
-        </div>
-        <div>
-          <h2 className="max-w-[230px] text-[17px] font-semibold leading-[1.08] tracking-[0] sm:text-[19px]">
-            {content.lead}{" "}
-            <span className="font-instrument inline-block pb-1 text-[21px] font-normal italic leading-[1.1]">{content.accent}</span>{" "}
-            {content.tail}
-          </h2>
-          <p className="mt-3 max-w-[250px] text-[10px] leading-[1.5] text-white/58 sm:text-[11px]">{content.description}</p>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
 function Field({ label, value, onChange, multiline = false }) {
   const className =
-    "mt-2 w-full rounded-[10px] border border-white/15 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-white/25 focus:border-[#df6254]";
+    "mt-2 w-full rounded-[10px] border border-white/15 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-white/25 focus:border-[#f5ea28]";
   return (
     <label className="block text-[11px] font-bold uppercase text-white/55">
       {label}
@@ -417,7 +396,7 @@ function UploadButton({ label = "Upload image", onChange, disabled = false }) {
   return (
     <label
       className={`flex min-h-10 items-center justify-center gap-2 border border-dashed border-white/20 text-[10px] font-bold uppercase text-white/55 transition-colors ${
-        disabled ? "cursor-wait opacity-45" : "cursor-pointer hover:border-[#df6254] hover:text-[#df6254]"
+        disabled ? "cursor-wait opacity-45" : "cursor-pointer hover:border-[#f5ea28] hover:text-[#f5ea28]"
       }`}
     >
       <Upload size={14} /> {disabled ? "Uploading..." : label}
@@ -431,10 +410,10 @@ function RangeField({ label, value, min = 80, max = 280, onChange }) {
     <label className="block text-[11px] font-bold uppercase text-white/55">
       <span className="flex items-center justify-between">
         {label}
-        <span className="text-[#df6254]">{value}vh</span>
+        <span className="text-[#f5ea28]">{value}vh</span>
       </span>
       <input
-        className="mt-3 w-full accent-[#df6254]"
+        className="mt-3 w-full accent-[#f5ea28]"
         type="range"
         min={min}
         max={max}
@@ -449,7 +428,7 @@ function RangeField({ label, value, min = 80, max = 280, onChange }) {
 function EditorGroup({ title, children, open = false }) {
   return (
     <details className="border border-white/12" open={open}>
-      <summary className="cursor-pointer px-4 py-4 text-[11px] font-bold uppercase text-[#df6254]">{title}</summary>
+      <summary className="cursor-pointer px-4 py-4 text-[11px] font-bold uppercase text-[#f5ea28]">{title}</summary>
       <div className="space-y-4 border-t border-white/10 p-4">{children}</div>
     </details>
   );
@@ -651,7 +630,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
   return (
     <>
       <button
-        className="fixed bottom-5 right-5 z-30 hidden size-14 place-items-center rounded-full border-[6px] border-[#d6d8d2] bg-[#ece9df] text-[#172018] shadow-2xl transition-colors hover:bg-white hover:text-[#cf4c3e] md:grid"
+        className="fixed bottom-5 right-5 z-30 hidden size-14 place-items-center border-4 border-[#090909] bg-[#f5ea28] text-[#090909] shadow-2xl transition-colors hover:bg-[#090909] hover:text-white md:grid"
         type="button"
         title="Edit content"
         aria-label="Edit page content"
@@ -665,10 +644,10 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
           <section className="ml-auto flex h-full w-full max-w-[440px] flex-col overflow-hidden rounded-[28px] border-[6px] border-[#d6d8d2] bg-[#0a0f0d] text-white shadow-2xl">
             <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
               <div className="flex items-center gap-3">
-                <Settings size={17} className="text-[#df6254]" />
+                <Settings size={17} className="text-[#f5ea28]" />
                 <div>
                   <p className="text-sm font-bold">Content editor</p>
-                  <p className={`text-[10px] ${cloudStatus === "online" ? "text-[#df6254]" : "text-white/45"}`}>
+                  <p className={`text-[10px] ${cloudStatus === "online" ? "text-[#f5ea28]" : "text-white/45"}`}>
                     {cloudStatus === "online" ? "Supabase connected" : cloudStatus === "connecting" ? "Connecting..." : "Local fallback"}
                   </p>
                 </div>
@@ -676,7 +655,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
               <div className="flex items-center">
                 {isUnlocked && (
                   <button
-                    className="grid size-10 place-items-center text-white/55 hover:text-[#df6254]"
+                    className="grid size-10 place-items-center text-white/55 hover:text-[#f5ea28]"
                     type="button"
                     title="Sign out"
                     aria-label="Sign out of editor"
@@ -693,13 +672,13 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
 
             {!isUnlocked ? (
               <form className="flex flex-1 flex-col justify-center p-6" onSubmit={unlock}>
-                <LockKeyhole size={28} className="text-[#df6254]" />
+                <LockKeyhole size={28} className="text-[#f5ea28]" />
                 <h2 className="mt-5 text-2xl font-extrabold">Admin sign in</h2>
                 <p className="mt-2 max-w-xs text-sm leading-6 text-white/55">Use the portfolio administrator account created in Supabase Auth.</p>
                 <label className="mt-7 text-[11px] font-bold uppercase text-white/55">
                   Email
                   <input
-                    className="mt-2 w-full rounded-[10px] border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#df6254]"
+                    className="mt-2 w-full rounded-[10px] border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#f5ea28]"
                     type="email"
                     autoComplete="email"
                     autoFocus
@@ -710,7 +689,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                 <label className="mt-4 text-[11px] font-bold uppercase text-white/55">
                   Password
                   <input
-                    className="mt-2 w-full rounded-[10px] border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#df6254]"
+                    className="mt-2 w-full rounded-[10px] border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#f5ea28]"
                     type="password"
                     autoComplete="current-password"
                     value={password}
@@ -719,7 +698,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                 </label>
                 {error && <p className="mt-3 text-xs text-red-300">{error}</p>}
                 <button
-                  className="mt-5 min-h-12 rounded-full bg-[#df6254] text-xs font-bold uppercase text-white disabled:cursor-wait disabled:opacity-60"
+                  className="mt-5 min-h-12 rounded-full bg-[#f5ea28] text-xs font-bold uppercase text-[#090909] disabled:cursor-wait disabled:opacity-60"
                   type="submit"
                   disabled={isAuthenticating || !email.trim() || !password}
                 >
@@ -766,7 +745,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                       <button
                         className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
                           draft.mediaMode !== "image"
-                            ? "border-[#df6254] bg-[#df6254] text-white"
+                            ? "border-[#f5ea28] bg-[#f5ea28] text-[#090909]"
                             : "border-white/15 text-white/65"
                         }`}
                         type="button"
@@ -777,7 +756,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                       <button
                         className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
                           draft.mediaMode === "image"
-                            ? "border-[#df6254] bg-[#df6254] text-white"
+                            ? "border-[#f5ea28] bg-[#f5ea28] text-[#090909]"
                             : "border-white/15 text-white/65"
                         }`}
                         type="button"
@@ -870,7 +849,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                           </div>
                         ))}
                         <button
-                          className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#df6254] hover:text-[#df6254]"
+                          className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#f5ea28] hover:text-[#f5ea28]"
                           type="button"
                           onClick={() => addGalleryImage("projects", index)}
                         >
@@ -929,7 +908,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                           </div>
                         ))}
                         <button
-                          className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#df6254] hover:text-[#df6254]"
+                          className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#f5ea28] hover:text-[#f5ea28]"
                           type="button"
                           onClick={() => addGalleryImage("blog", index)}
                         >
@@ -987,7 +966,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                           </div>
                         ))}
                         <button
-                          className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#df6254] hover:text-[#df6254]"
+                          className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#f5ea28] hover:text-[#f5ea28]"
                           type="button"
                           onClick={() => addGalleryImage("resume", index)}
                         >
@@ -1040,7 +1019,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                       </div>
                     ))}
                     <button
-                      className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#df6254] hover:text-[#df6254]"
+                      className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#f5ea28] hover:text-[#f5ea28]"
                       type="button"
                       onClick={addAboutGalleryImage}
                     >
@@ -1052,7 +1031,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
 
                 <footer className="grid shrink-0 grid-cols-[auto_1fr] gap-2 border-t border-white/10 p-4">
                   {notice && (
-                    <p className="col-span-2 border-l-2 border-[#df6254] py-1 pl-3 text-xs leading-5 text-white/65" aria-live="polite">
+                    <p className="col-span-2 border-l-2 border-[#f5ea28] py-1 pl-3 text-xs leading-5 text-white/65" aria-live="polite">
                       {notice}
                     </p>
                   )}
@@ -1070,7 +1049,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                     <RotateCcw size={16} />
                   </button>
                   <button
-                    className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#df6254] text-xs font-bold uppercase text-white"
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#f5ea28] text-xs font-bold uppercase text-[#090909]"
                     type="button"
                     disabled={isSaving || isUploading}
                     onClick={save}
@@ -1078,7 +1057,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                     <Save size={16} /> {isSaving ? "Saving..." : isUploading ? "Uploading..." : "Save changes"}
                   </button>
                   <button
-                    className="col-span-2 flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-xs font-bold uppercase text-white/70 hover:border-[#df6254] hover:text-[#df6254]"
+                    className="col-span-2 flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-xs font-bold uppercase text-white/70 hover:border-[#f5ea28] hover:text-[#f5ea28]"
                     type="button"
                     onClick={copyLink}
                   >
@@ -1263,6 +1242,11 @@ function App() {
     return DEFAULT_CONTENT;
   };
 
+  const galleryCount = content.projects.items.reduce(
+    (total, item) => total + Math.max(1, item.gallery?.length || 0),
+    0,
+  );
+
   if (detailId) {
     return (
       <>
@@ -1282,8 +1266,8 @@ function App() {
   }
 
   return (
-    <main id="top" className="min-h-[100dvh] overflow-x-clip bg-[#090c0a] text-[#ece9df]">
-      <div className="relative min-h-[100dvh] overflow-hidden">
+    <main id="top" className="min-h-[100dvh] overflow-x-clip bg-[#d9d9d5] text-[#090909]">
+      <div className="relative min-h-[100dvh] overflow-hidden bg-[#f4b44e]">
         <Navigation
           brand={content.brand}
           logoImage={content.logoImage}
@@ -1294,43 +1278,84 @@ function App() {
           onEdit={openEditor}
         />
 
-        <section className="relative z-10 mx-auto flex min-h-[100dvh] max-w-[1540px] px-3 pb-4 pt-[92px] sm:px-5 lg:px-7">
-          <div className="frame-board grid w-full gap-2 p-0 lg:grid-cols-[0.68fr_1.32fr]">
-            <div className="order-2 grid grid-cols-2 gap-2 lg:order-1 lg:grid-cols-1 lg:grid-rows-2">
-              <GlassCard content={content.card} />
-              <div className="module-card module-outline flex min-h-[210px] flex-col justify-between bg-[#cf4c3e] p-5 text-[#f4eee6] sm:p-6">
-                <p className="font-jakarta text-[10px] font-bold uppercase text-white/78">{content.eyebrow}</p>
-                <div>
-                  <p className="line-clamp-5 text-[11px] leading-[1.55] text-white/78 sm:text-[13px]">{content.description}</p>
-                  <a
-                    className="group mt-5 inline-flex min-h-11 items-center gap-3 rounded-full bg-[#ece9df] px-5 text-[11px] font-black uppercase text-[#182019] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ece9df]"
-                    href="#projects"
-                  >
-                    {content.ctaLabel}
-                    <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" size={16} />
-                  </a>
+        <section className="relative z-10 mx-auto min-h-[100dvh] max-w-[1540px] px-0 pb-0 pt-20 sm:px-5 sm:pb-10 sm:pt-24 lg:px-8 lg:pb-14">
+          <div className="editorial-shell relative overflow-hidden bg-[#f7f7f2] shadow-[0_28px_90px_rgba(91,55,0,0.24)]">
+            <div className="relative px-5 pb-10 pt-10 sm:px-9 sm:pb-12 sm:pt-12 lg:px-16 lg:pb-14 lg:pt-14">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <span className="inline-flex min-h-8 items-center bg-[#090909] px-3 font-jakarta text-[10px] font-black uppercase text-white">
+                  {content.eyebrow}
+                </span>
+                <a
+                  className="group inline-flex min-h-11 items-center gap-3 rounded-full bg-[#f5ea28] px-5 text-[11px] font-black uppercase text-[#090909] transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#090909]"
+                  href="#projects"
+                >
+                  {content.ctaLabel}
+                  <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" size={16} />
+                </a>
+              </div>
+
+              <h1 className="display-rounded mt-8 max-w-[12ch] text-[54px] uppercase leading-[0.8] text-[#090909] sm:text-[72px] lg:max-w-none lg:text-[92px] xl:text-[108px]">
+                {content.headline}<span className="text-[#d4c600]">.</span>
+              </h1>
+            </div>
+
+            <div className="relative min-h-[560px] overflow-hidden bg-[#050505] sm:min-h-[640px] lg:min-h-[70vh]">
+              <BackgroundMedia content={content} />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.72),rgba(0,0,0,0.06)_48%,rgba(0,0,0,0.56))]" />
+
+              <aside className="absolute left-5 top-5 z-30 max-w-[270px] border-2 border-white/70 bg-black/62 p-5 text-white backdrop-blur-md sm:left-8 sm:top-8 sm:p-6">
+                <p className="font-jakarta text-[11px] font-black text-[#f5ea28]">{content.card.year}</p>
+                <h2 className="mt-12 text-xl font-black leading-[1.02]">
+                  {content.card.lead} <span className="font-instrument inline-block pb-1 text-2xl font-normal italic leading-[1.1]">{content.card.accent}</span> {content.card.tail}
+                </h2>
+                <p className="mt-4 text-[11px] leading-5 text-white/62">{content.card.description}</p>
+              </aside>
+
+              <div className="pointer-events-none absolute right-5 top-5 z-30 hidden items-center sm:flex sm:right-8 sm:top-8" aria-hidden="true">
+                {content.projects.items.slice(0, 2).map((item, index) => (
+                  <div key={item.index} className={`size-20 overflow-hidden rounded-full border-[5px] border-white bg-[#090909] lg:size-24 ${index ? "-ml-4" : ""}`}>
+                    <img className="h-full w-full object-cover" src={item.asset} alt="" />
+                  </div>
+                ))}
+              </div>
+
+              <div className="absolute left-1/2 top-[48%] z-10 h-[58%] w-[82%] -translate-x-1/2 -translate-y-1/2 rotate-[-3deg] border-2 border-dashed border-white/70 p-2 sm:h-[66%] sm:w-[64%] sm:p-3 lg:w-[54%]">
+                <div className="h-full overflow-hidden border-[7px] border-[#f5ea28] bg-[#111] sm:border-[10px]">
+                  <img className="h-full w-full object-cover transition-transform duration-700 hover:scale-[1.025]" src={content.projects.items[0]?.asset} alt={content.projects.items[0]?.title || "Featured project"} />
                 </div>
+              </div>
+
+              <div className="absolute inset-x-[-6%] bottom-20 z-20 flex rotate-[-4deg] bg-[#48dce7] text-[#090909]">
+                {[...content.projects.items, ...content.projects.items].map((item, index) => (
+                  <span key={`hero-cyan-${item.index}-${index}`} className="shrink-0 border-r-2 border-[#090909] px-7 py-3 text-xs font-black uppercase sm:px-10 sm:text-sm">
+                    {item.label}
+                  </span>
+                ))}
+              </div>
+              <div className="absolute inset-x-[-6%] bottom-7 z-20 flex rotate-[3deg] bg-[#f5ea28] text-[#090909]">
+                {[...content.projects.items].reverse().concat(content.projects.items).map((item, index) => (
+                  <span key={`hero-yellow-${item.index}-${index}`} className="shrink-0 border-r-2 border-[#090909] px-7 py-3 text-xs font-black uppercase sm:px-10 sm:text-sm">
+                    {item.metric}
+                  </span>
+                ))}
               </div>
             </div>
 
-            <div className="module-card module-outline relative order-1 min-h-[52vh] bg-[#080b09] p-5 sm:p-8 lg:order-2 lg:min-h-[calc(100dvh-108px)] lg:p-10 xl:p-12">
-              <BackgroundMedia content={content} />
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,rgba(8,11,9,0.78)_0%,rgba(8,11,9,0.14)_60%,transparent_100%)]" />
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(8,11,9,0.28)_0%,transparent_70%)]" />
-
-              <div className="relative z-10 flex items-start justify-between gap-4">
-                <span className="rounded-full border border-white/20 bg-black/20 px-4 py-2 text-[10px] font-bold uppercase text-white/70 backdrop-blur-md">
-                  {content.brand}
-                </span>
-                <span className="rounded-full bg-[#d6d8d2] px-4 py-2 text-[10px] font-black uppercase text-[#182019]">
-                  {content.card.year}
-                </span>
+            <div className="grid border-t-2 border-[#090909] bg-white lg:grid-cols-[1.05fr_0.95fr]">
+              <div className="border-b-2 border-[#090909] p-6 sm:p-9 lg:border-b-0 lg:border-r-2 lg:p-12">
+                <p className="max-w-2xl text-sm leading-7 text-[#090909]/66 sm:text-base sm:leading-8">{content.description}</p>
               </div>
-
-              <div className="absolute inset-x-5 bottom-6 z-10 sm:inset-x-8 sm:bottom-8 lg:inset-x-10 lg:bottom-10 xl:inset-x-12 xl:bottom-12">
-                <h1 className="display-rounded max-w-[12ch] break-words text-[38px] uppercase leading-[0.9] text-[#ece9df] sm:text-[56px] lg:text-[72px] xl:text-[86px]">
-                  {content.headline}<span className="font-sans font-black text-[#df6254]">.</span>
-                </h1>
+              <div className="grid grid-cols-3 divide-x-2 divide-[#090909]">
+                {[
+                  [String(content.projects.items.length).padStart(2, "0"), "Projects"],
+                  [String(content.resume.items.length).padStart(2, "0"), "Capabilities"],
+                  [String(galleryCount).padStart(2, "0"), "Gallery pages"],
+                ].map(([value, label]) => (
+                  <div key={label} className="flex min-h-32 flex-col justify-center px-3 text-center sm:min-h-40 sm:px-5">
+                    <strong className="display-rounded text-3xl leading-none sm:text-5xl">{value}</strong>
+                    <span className="mt-3 text-[9px] font-black uppercase text-[#090909]/50 sm:text-[10px]">{label}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

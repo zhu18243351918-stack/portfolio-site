@@ -65,11 +65,11 @@ function resolveDetail(detailId, content) {
 function DetailLogo({ brand, logoImage }) {
   return (
     <span className="flex min-w-0 items-center gap-3">
-      <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-[14px] bg-[#d6d8d2] font-mono text-[10px] font-black text-[#172018]">
+      <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden bg-[#090909] font-mono text-[10px] font-black text-white">
         {logoImage ? <img className="h-full w-full object-cover" src={logoImage} alt="" /> : "A/P"}
-        {!logoImage && <span className="absolute right-1 top-1 size-2 rounded-full bg-[#cf4c3e]" />}
+        {!logoImage && <span className="absolute right-1 top-1 size-2 bg-[#f5ea28]" />}
       </span>
-      <span className="max-w-56 truncate text-[15px] font-bold text-[#ece9df]">{brand}</span>
+      <span className="max-w-56 truncate text-[15px] font-black text-[#090909]">{brand}</span>
     </span>
   );
 }
@@ -120,12 +120,12 @@ export default function DetailPage({ detailId, content, onEdit }) {
 
   if (!detail) {
     return (
-      <main className="grid min-h-[100dvh] place-items-center bg-[#090c0a] px-4 text-[#ece9df]">
+      <main className="grid min-h-[100dvh] place-items-center bg-[#d9d9d5] px-4 text-[#090909]">
         <div className="frame-board w-full max-w-3xl p-0">
-          <div className="module-card bg-[#cf4c3e] p-8 text-[#f5eee6] sm:p-12">
-            <p className="font-jakarta text-[10px] font-black uppercase text-white/70">Gallery unavailable</p>
+          <div className="module-card bg-[#f5ea28] p-8 text-[#090909] sm:p-12">
+            <p className="font-jakarta text-[10px] font-black uppercase text-[#090909]/60">Gallery unavailable</p>
             <h1 className="display-rounded mt-5 text-4xl uppercase leading-[0.94] sm:text-6xl">This secondary page does not exist.</h1>
-            <a className="mt-9 inline-flex min-h-11 items-center gap-2 rounded-full bg-[#ece9df] px-5 text-sm font-black text-[#172018]" href={homeHref}>
+            <a className="mt-9 inline-flex min-h-11 items-center gap-2 bg-[#090909] px-5 text-sm font-black text-white" href={homeHref}>
               <ArrowLeft size={17} /> Return to portfolio
             </a>
           </div>
@@ -137,36 +137,36 @@ export default function DetailPage({ detailId, content, onEdit }) {
   const activeBackground = detail.gallery[activeIndex] || detail.gallery[0];
 
   return (
-    <main className="relative min-h-[100dvh] overflow-x-clip bg-[#090c0a] text-[#ece9df]">
-      <div className="pointer-events-none fixed inset-0 hidden md:block" aria-hidden="true">
-        <img className="h-full w-full scale-105 object-cover opacity-18 blur-[18px]" src={activeBackground} alt="" />
-        <div className="absolute inset-0 bg-[#090c0a]/76" />
+    <main className="relative min-h-[100dvh] overflow-x-clip bg-[#d9d9d5] text-[#090909]">
+      <div className="pointer-events-none fixed inset-0 hidden opacity-20 lg:block" aria-hidden="true">
+        <img className="h-full w-full scale-105 object-cover grayscale blur-[26px]" src={activeBackground} alt="" />
+        <div className="absolute inset-0 bg-[#d9d9d5]/82" />
       </div>
 
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-[#090c0a]/78 backdrop-blur-xl">
+      <header className="fixed inset-x-0 top-0 z-40 border-b-2 border-[#090909] bg-[#f7f7f2]/94 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-[1540px] items-center justify-between px-5 sm:px-8 lg:px-10">
           <a href={homeHref} aria-label="Return to portfolio">
             <DetailLogo brand={content.brand} logoImage={content.logoImage} />
           </a>
           <div className="flex items-center gap-2">
             <button
-              className="grid size-10 place-items-center rounded-full border border-white/15 text-white/68 hover:border-[#df6254] hover:text-[#df6254] md:hidden"
+              className="grid size-10 place-items-center border-2 border-[#090909] bg-[#f5ea28] text-[#090909] md:hidden"
               type="button"
               aria-label="Edit page content"
               onClick={onEdit}
             >
               <Settings size={17} />
             </button>
-            <a className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 px-4 text-xs font-bold uppercase text-white/68 hover:border-[#df6254] hover:text-[#df6254]" href={homeHref}>
+            <a className="inline-flex min-h-10 items-center gap-2 border-2 border-[#090909] bg-[#090909] px-4 text-xs font-black uppercase text-white hover:bg-[#f5ea28] hover:text-[#090909]" href={homeHref}>
               <ArrowLeft size={16} /> Back
             </a>
           </div>
         </div>
       </header>
 
-      <section className="relative z-10 px-3 pb-8 pt-24 sm:px-5 lg:px-7 lg:pb-14 lg:pt-28">
-        <div className="frame-board mx-auto max-w-[1540px] p-0">
-          <div className="module-card relative overflow-hidden bg-black/30" style={{ height: `${detail.galleryHeight}vh`, minHeight: "390px" }}>
+      <section className="relative z-10 px-0 pb-0 pt-20 sm:px-5 sm:pb-10 sm:pt-24 lg:px-8 lg:pb-14 lg:pt-28">
+        <div className="editorial-shell mx-auto max-w-[1500px] overflow-hidden bg-[#f7f7f2] shadow-[0_28px_90px_rgba(0,0,0,0.18)]">
+          <div className="relative m-0 overflow-hidden border-[6px] border-[#090909] bg-black sm:m-3 sm:border-[10px]" style={{ height: `${detail.galleryHeight}vh`, minHeight: "430px" }}>
             <div
               ref={trackRef}
               className="gallery-track flex h-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
@@ -194,30 +194,30 @@ export default function DetailPage({ detailId, content, onEdit }) {
 
             <div className="absolute inset-x-4 bottom-4 flex items-center justify-between gap-3 sm:inset-x-6 sm:bottom-6">
               <div className="flex gap-2">
-                <button className="grid size-11 place-items-center rounded-full bg-[#ece9df] text-[#172018] shadow-lg hover:bg-white" type="button" aria-label="Previous image" onClick={() => goTo(activeIndex - 1)}>
+                <button className="grid size-11 place-items-center border-2 border-[#090909] bg-white text-[#090909] shadow-lg hover:bg-[#f5ea28]" type="button" aria-label="Previous image" onClick={() => goTo(activeIndex - 1)}>
                   <ChevronLeft size={19} />
                 </button>
-                <button className="grid size-11 place-items-center rounded-full bg-[#cf4c3e] text-[#f5eee6] shadow-lg hover:bg-[#df6254]" type="button" aria-label={isPaused ? "Play slideshow" : "Pause slideshow"} onClick={() => setIsPaused((current) => !current)}>
+                <button className="grid size-11 place-items-center border-2 border-[#090909] bg-[#f5ea28] text-[#090909] shadow-lg hover:bg-white" type="button" aria-label={isPaused ? "Play slideshow" : "Pause slideshow"} onClick={() => setIsPaused((current) => !current)}>
                   {isPaused ? <Play size={17} /> : <Pause size={17} />}
                 </button>
-                <button className="grid size-11 place-items-center rounded-full bg-[#ece9df] text-[#172018] shadow-lg hover:bg-white" type="button" aria-label="Next image" onClick={() => goTo(activeIndex + 1)}>
+                <button className="grid size-11 place-items-center border-2 border-[#090909] bg-white text-[#090909] shadow-lg hover:bg-[#f5ea28]" type="button" aria-label="Next image" onClick={() => goTo(activeIndex + 1)}>
                   <ChevronRight size={19} />
                 </button>
               </div>
-              <span className="rounded-full bg-[#ece9df] px-4 py-3 font-jakarta text-[10px] font-black text-[#172018]">
+              <span className="border-2 border-[#090909] bg-white px-4 py-3 font-jakarta text-[10px] font-black text-[#090909]">
                 {String(activeIndex + 1).padStart(2, "0")} / {String(galleryLength).padStart(2, "0")}
               </span>
             </div>
           </div>
 
-          <div className="mt-2 grid gap-2 lg:grid-cols-[1.18fr_0.82fr]">
-            <div className="module-card bg-[#ece9df] p-6 text-[#172018] sm:p-9 lg:p-11">
-              <p className="font-jakarta text-[10px] font-black uppercase text-[#cf4c3e]">{detail.type} / {detail.marker}</p>
-              <h1 className="display-rounded mt-5 max-w-[13ch] text-4xl uppercase leading-[0.92] sm:text-6xl lg:text-[72px]">{detail.title}</h1>
+          <div className="grid border-t-2 border-[#090909] lg:grid-cols-[1.18fr_0.82fr]">
+            <div className="border-b-2 border-[#090909] bg-[#f7f7f2] p-6 text-[#090909] sm:p-9 lg:border-b-0 lg:border-r-2 lg:p-12">
+              <p className="font-jakarta text-[10px] font-black uppercase text-[#090909]/52">{detail.type} / {detail.marker}</p>
+              <h1 className="display-rounded mt-5 max-w-[14ch] text-4xl uppercase leading-[0.88] sm:text-6xl lg:text-[70px]">{detail.title}</h1>
             </div>
-            <div className="module-card flex flex-col justify-end bg-[#415241] p-6 sm:p-9 lg:p-11">
-              <p className="text-[10px] font-black uppercase text-white/48">{detail.meta}</p>
-              <p className="mt-5 max-w-xl text-sm leading-7 text-white/65">{detail.description}</p>
+            <div className="flex flex-col justify-end bg-[#090909] p-6 text-white sm:p-9 lg:p-12">
+              <p className="text-[10px] font-black uppercase text-[#f5ea28]">{detail.meta}</p>
+              <p className="mt-5 max-w-xl text-sm leading-7 text-white/66">{detail.description}</p>
             </div>
           </div>
         </div>

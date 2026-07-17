@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Mail } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Mail, Play } from "lucide-react";
 import { rememberHomeScrollPosition } from "./scrollPosition";
 
 function detailHref(id) {
@@ -7,70 +7,87 @@ function detailHref(id) {
   return `?detail=${id}${contentHash}`;
 }
 
-function ProjectCard({ item, index, setCardRef, revealed }) {
-  const isLead = index === 0;
-  const isAccent = index === 1;
-  const layoutClass = isLead ? "lg:col-span-7 lg:row-span-2" : "lg:col-span-5";
+function SectionMarker({ children, inverse = false }) {
+  return (
+    <span
+      className={`inline-flex min-h-8 items-center px-3 font-jakarta text-[10px] font-black uppercase ${
+        inverse ? "bg-[#f5ea28] text-[#090909]" : "bg-[#090909] text-white"
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function ProjectTicker({ content }) {
+  const labels = content.items.flatMap((item) => [item.label, item.metric]);
+
+  return (
+    <div className="relative h-32 overflow-hidden bg-[#090909] sm:h-40" aria-hidden="true">
+      <div className="ticker-strip ticker-strip-a absolute left-[-6%] top-6 flex w-[112%] rotate-[-4deg] bg-[#48dce7] text-[#090909]">
+        {[...labels, ...labels].map((label, index) => (
+          <span key={`cyan-${label}-${index}`} className="shrink-0 border-r-2 border-[#090909] px-7 py-3 text-sm font-black uppercase sm:px-10 sm:text-base">
+            {label}
+          </span>
+        ))}
+      </div>
+      <div className="ticker-strip ticker-strip-b absolute left-[-6%] top-[72px] flex w-[112%] rotate-[3deg] bg-[#f5ea28] text-[#090909] sm:top-[92px]">
+        {[...labels].reverse().concat(labels).map((label, index) => (
+          <span key={`yellow-${label}-${index}`} className="shrink-0 border-r-2 border-[#090909] px-7 py-3 text-sm font-black uppercase sm:px-10 sm:text-base">
+            {label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProjectTile({ tile, visualIndex, setCardRef, revealed }) {
+  const layouts = [
+    "sm:col-span-2 lg:col-span-7 lg:row-span-2",
+    "lg:col-span-5",
+    "lg:col-span-5",
+    "lg:col-span-4",
+    "lg:col-span-4",
+    "lg:col-span-4",
+  ];
+  const showCopy = visualIndex === 0 || visualIndex === 2 || visualIndex === 4;
 
   return (
     <article
-      ref={(node) => setCardRef(index, node)}
-      className={`module-card module-lift relative min-h-[420px] overflow-hidden ${layoutClass} ${
-        isAccent ? "bg-[#cf4c3e]" : index === 2 ? "bg-[#415241]" : "bg-[#111612]"
-      } transition-[opacity,transform] duration-700 ${
+      ref={(node) => setCardRef(visualIndex, node)}
+      className={`group relative min-h-[330px] overflow-hidden bg-[#171717] ${layouts[visualIndex] || "lg:col-span-4"} transition-[opacity,transform] duration-700 ${
         revealed ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-      }`}
-      data-project-index={index}
+      } ${visualIndex === 0 ? "sm:min-h-[520px] lg:min-h-0" : ""}`}
+      data-project-index={visualIndex}
     >
       <a
-        className="group block h-full"
-        href={detailHref(`project-${index}`)}
-        aria-label={`Open ${item.title} gallery`}
+        className="block h-full min-h-[inherit]"
+        href={detailHref(`project-${tile.projectIndex}`)}
+        aria-label={`Open ${tile.item.title} gallery`}
         onClick={rememberHomeScrollPosition}
       >
-        {isLead ? (
-          <>
-            <img className="media-zoom absolute inset-0 h-full w-full object-cover opacity-88" src={item.asset} alt={item.title} />
-            <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(8,11,9,0.9)_0%,rgba(8,11,9,0.18)_65%,transparent_100%)]" />
-            <div className="absolute inset-x-6 bottom-6 sm:inset-x-8 sm:bottom-8">
-              <div className="flex items-center justify-between gap-5 text-[10px] font-bold uppercase text-white/65">
-                <span>{item.label}</span>
-                <span>{item.metric}</span>
-              </div>
-              <h3 className="display-rounded mt-4 max-w-[12ch] text-4xl uppercase leading-[0.92] text-[#ece9df] sm:text-6xl">
-                {item.title}
-              </h3>
-              <p className="mt-4 max-w-xl text-sm leading-6 text-white/62">{item.description}</p>
-            </div>
-            <ArrowUpRight className="absolute right-6 top-6 text-[#ece9df] transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" size={24} />
-          </>
-        ) : (
-          <div className="flex h-full min-h-[420px] flex-col justify-between p-5 sm:p-7">
-            <div className="flex items-start justify-between gap-5">
-              <div
-                className={`overflow-hidden bg-black/15 ${
-                  isAccent ? "size-36 rounded-full sm:size-44" : "h-40 w-[62%] rounded-[22px] sm:h-48"
-                }`}
-              >
-                <img className="media-zoom h-full w-full object-cover" src={item.asset} alt={item.title} />
-              </div>
-              <ArrowUpRight
-                className={`${isAccent ? "text-[#f5eee6]" : "text-[#ece9df]"} transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1`}
-                size={23}
-              />
-            </div>
+        <img className="media-zoom absolute inset-0 h-full w-full object-cover" src={tile.image} alt={tile.item.title} />
+        <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(0,0,0,0.88)_0%,rgba(0,0,0,0.08)_62%,transparent_100%)]" />
+        <div className="absolute left-4 top-4 flex items-center gap-2">
+          <span className="bg-[#f5ea28] px-3 py-2 font-jakarta text-[10px] font-black text-[#090909]">{tile.item.index}</span>
+          <span className="bg-[#090909] px-3 py-2 text-[10px] font-black uppercase text-white">{tile.item.label}</span>
+        </div>
+        <ArrowUpRight className="absolute right-5 top-5 text-white transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" size={24} />
 
-            <div className={isAccent ? "text-[#f5eee6]" : "text-[#ece9df]"}>
-              <div className="flex items-center justify-between gap-4 text-[10px] font-bold uppercase opacity-65">
-                <span>{item.label}</span>
-                <span>{item.index}</span>
-              </div>
-              <h3 className="display-rounded mt-4 max-w-[13ch] text-3xl uppercase leading-[0.94] sm:text-4xl">{item.title}</h3>
-              <p className="mt-4 line-clamp-3 max-w-lg text-xs leading-5 opacity-65 sm:text-sm sm:leading-6">{item.description}</p>
-              <p className="mt-5 text-xs font-black uppercase">{item.metric}</p>
+        <div className="absolute inset-x-5 bottom-5 text-white sm:inset-x-7 sm:bottom-7">
+          {showCopy ? (
+            <>
+              <h3 className="display-rounded max-w-[14ch] text-3xl uppercase leading-[0.9] sm:text-5xl">{tile.item.title}</h3>
+              <p className="mt-4 line-clamp-2 max-w-xl text-xs leading-5 text-white/70 sm:text-sm sm:leading-6">{tile.item.description}</p>
+            </>
+          ) : (
+            <div className="flex items-end justify-between gap-4">
+              <p className="max-w-[16ch] text-lg font-black uppercase leading-tight">{tile.item.title}</p>
+              <span className="text-[10px] font-black uppercase text-[#f5ea28]">{tile.item.metric}</span>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </a>
     </article>
   );
@@ -80,6 +97,10 @@ export function ProjectsSection({ content, size }) {
   const cardRefs = useRef([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [revealed, setRevealed] = useState(() => new Set());
+  const visualTiles = content.items.flatMap((item, projectIndex) => [
+    { item, projectIndex, image: item.asset },
+    { item, projectIndex, image: item.gallery?.[1] || item.gallery?.[0] || item.asset },
+  ]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -104,44 +125,44 @@ export function ProjectsSection({ content, size }) {
   };
 
   return (
-    <section id="projects" className="bg-[#090c0a] px-3 py-16 sm:px-5 lg:px-7 lg:py-24" style={{ minHeight: `${size}vh` }}>
-      <div className="frame-board mx-auto max-w-[1500px] p-0">
-        <div className="grid gap-2 lg:grid-cols-[0.78fr_1.22fr]">
-          <header className="module-card bg-[#151a16] p-6 sm:p-9 lg:p-11">
-            <p className="font-jakarta text-[10px] font-bold uppercase text-[#df6254]">{content.eyebrow}</p>
-            <h2 className="display-rounded mt-5 max-w-[12ch] text-4xl uppercase leading-[0.92] text-[#ece9df] sm:text-6xl">
+    <section id="projects" className="bg-[#d9d9d5] px-0 py-0 lg:px-8 lg:py-20" style={{ minHeight: `${size}vh` }}>
+      <div className="editorial-shell mx-auto max-w-[1500px] bg-[#f7f7f2]">
+        <header className="grid gap-8 px-5 py-14 sm:px-9 sm:py-20 lg:grid-cols-[1.18fr_0.82fr] lg:items-end lg:px-16 lg:py-24">
+          <div>
+            <SectionMarker>{content.eyebrow}</SectionMarker>
+            <h2 className="display-rounded mt-6 max-w-[14ch] text-5xl uppercase leading-[0.86] text-[#090909] sm:text-7xl lg:text-[82px]">
               {content.title}
             </h2>
-            <p className="mt-6 max-w-lg text-sm leading-7 text-white/52">{content.description}</p>
-          </header>
+          </div>
+          <div className="lg:justify-self-end">
+            <p className="max-w-xl text-sm leading-7 text-[#090909]/64 sm:text-base sm:leading-8">{content.description}</p>
+            <nav className="mt-8 flex flex-wrap gap-2" aria-label="Project navigation">
+              {content.items.map((item, index) => (
+                <button
+                  key={item.index}
+                  className={`min-h-10 border-2 border-[#090909] px-4 text-[11px] font-black uppercase transition-colors ${
+                    Math.floor(activeIndex / 2) === index ? "bg-[#f5ea28] text-[#090909]" : "bg-transparent text-[#090909] hover:bg-[#090909] hover:text-white"
+                  }`}
+                  type="button"
+                  onClick={() => cardRefs.current[index * 2]?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                >
+                  {item.index} / {item.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </header>
 
-          <nav className="module-card hide-scrollbar flex items-stretch gap-2 overflow-x-auto bg-[#111512] p-2" aria-label="Project navigation">
-            {content.items.map((item, index) => (
-              <button
-                key={item.index}
-                className={`module-card min-w-[190px] flex-1 px-5 py-5 text-left transition-colors sm:min-w-[220px] ${
-                  activeIndex === index
-                    ? "bg-[#cf4c3e] text-[#f5eee6]"
-                    : "bg-[#415241] text-[#ece9df] hover:bg-[#4c604d]"
-                }`}
-                type="button"
-                onClick={() => cardRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "center" })}
-              >
-                <span className="text-[10px] font-black uppercase opacity-65">{item.index}</span>
-                <span className="mt-3 block text-sm font-bold leading-5">{item.title}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
+        <ProjectTicker content={content} />
 
-        <div className="mt-2 grid gap-2 lg:grid-cols-12 lg:grid-rows-[minmax(320px,42vh)_minmax(320px,42vh)]">
-          {content.items.map((item, index) => (
-            <ProjectCard
-              key={`${item.index}-${item.title}`}
-              item={item}
-              index={index}
+        <div className="grid gap-1 bg-[#090909] p-1 sm:grid-cols-2 lg:auto-rows-[minmax(250px,34vh)] lg:grid-cols-12">
+          {visualTiles.map((tile, visualIndex) => (
+            <ProjectTile
+              key={`${tile.item.index}-${visualIndex}-${tile.image}`}
+              tile={tile}
+              visualIndex={visualIndex}
               setCardRef={setCardRef}
-              revealed={revealed.has(index)}
+              revealed={revealed.has(visualIndex)}
             />
           ))}
         </div>
@@ -151,44 +172,40 @@ export function ProjectsSection({ content, size }) {
 }
 
 export function BlogSection({ content, size }) {
-  return (
-    <section id="blog" className="bg-[#0c100d] px-3 py-16 sm:px-5 lg:px-7 lg:py-24" style={{ minHeight: `${size}vh` }}>
-      <div className="frame-board mx-auto max-w-[1500px] p-0">
-        <div className="grid gap-2 lg:grid-cols-[0.78fr_1.22fr]">
-          <header className="module-card flex flex-col justify-between bg-[#cf4c3e] p-6 text-[#f5eee6] sm:p-9 lg:p-11">
-            <p className="font-jakarta text-[10px] font-bold uppercase text-white/72">{content.eyebrow}</p>
-            <div className="mt-16">
-              <h2 className="display-rounded max-w-[11ch] text-4xl uppercase leading-[0.92] sm:text-6xl">{content.title}</h2>
-              <p className="mt-5 max-w-lg text-sm leading-7 text-white/68">{content.description}</p>
-            </div>
-          </header>
+  const layouts = ["lg:col-span-7 lg:row-span-2", "lg:col-span-5", "lg:col-span-5"];
 
-          <div className="module-card bg-[#151a16] p-5 sm:p-8">
-            <div className="hide-scrollbar flex h-full min-h-[420px] snap-x gap-3 overflow-x-auto lg:grid lg:grid-cols-3 lg:overflow-visible">
-              {content.items.map((item, index) => (
-                <a
-                  key={`${item.category}-${item.title}`}
-                  className="group module-card module-lift flex min-w-[250px] snap-center flex-col justify-between bg-[#ece9df] p-4 text-[#172018] lg:min-w-0"
-                  href={detailHref(`blog-${index}`)}
-                  onClick={rememberHomeScrollPosition}
-                >
-                  <div className="aspect-square overflow-hidden rounded-full bg-[#d6d8d2]">
-                    <img className="media-zoom h-full w-full object-cover" src={item.asset} alt={item.title} />
-                  </div>
-                  <div className="pt-6">
-                    <p className="text-[10px] font-black uppercase text-[#cf4c3e]">{item.category} / {item.meta}</p>
-                    <h3 className="mt-3 text-xl font-black leading-[1.05]">{item.title}</h3>
-                    <div className="mt-6 flex items-center justify-between">
-                      <span className="font-jakarta text-[10px] font-black">0{index + 1}</span>
-                      <span className="grid size-10 place-items-center rounded-full border border-[#172018]/20">
-                        <ArrowUpRight size={17} />
-                      </span>
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
+  return (
+    <section id="blog" className="bg-[#d9d9d5] px-0 lg:px-8" style={{ minHeight: `${size}vh` }}>
+      <div className="editorial-shell mx-auto max-w-[1500px] bg-[#f7f7f2] px-5 py-16 sm:px-9 sm:py-20 lg:px-16 lg:py-24">
+        <div className="flex flex-col items-start gap-7 border-b-4 border-[#090909] pb-10 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <SectionMarker inverse>{content.eyebrow}</SectionMarker>
+            <h2 className="display-rounded mt-6 max-w-[13ch] text-5xl uppercase leading-[0.86] text-[#090909] sm:text-7xl lg:text-[78px]">{content.title}</h2>
           </div>
+          <p className="max-w-md text-sm leading-7 text-[#090909]/62 sm:text-base">{content.description}</p>
+        </div>
+
+        <div className="mt-10 grid gap-3 lg:auto-rows-[minmax(300px,34vh)] lg:grid-cols-12">
+          {content.items.map((item, index) => (
+            <a
+              key={`${item.category}-${item.title}`}
+              className={`group relative min-h-[360px] overflow-hidden bg-[#090909] ${layouts[index] || "lg:col-span-4"}`}
+              href={detailHref(`blog-${index}`)}
+              onClick={rememberHomeScrollPosition}
+            >
+              <img className="media-zoom absolute inset-0 h-full w-full object-cover" src={item.asset} alt={item.title} />
+              <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(0,0,0,0.9)_0%,rgba(0,0,0,0.04)_70%)]" />
+              <div className="absolute inset-x-5 bottom-5 text-white sm:inset-x-7 sm:bottom-7">
+                <p className="text-[10px] font-black uppercase text-[#f5ea28]">{item.category} / {item.meta}</p>
+                <h3 className={`display-rounded mt-3 max-w-[14ch] uppercase leading-[0.9] ${index === 0 ? "text-4xl sm:text-6xl" : "text-3xl sm:text-4xl"}`}>
+                  {item.title}
+                </h3>
+              </div>
+              <span className="absolute right-5 top-5 grid size-11 place-items-center bg-[#f5ea28] text-[#090909] transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1">
+                <ArrowUpRight size={20} />
+              </span>
+            </a>
+          ))}
         </div>
       </div>
     </section>
@@ -196,43 +213,46 @@ export function BlogSection({ content, size }) {
 }
 
 export function ResumeSection({ content, size }) {
-  const tones = [
-    "bg-[#415241] text-[#ece9df]",
-    "bg-[#171c18] text-[#ece9df]",
-    "bg-[#ece9df] text-[#172018]",
-    "bg-[#cf4c3e] text-[#f5eee6]",
+  const aspectClasses = [
+    "aspect-[4/5]",
+    "aspect-square",
+    "aspect-[4/3]",
+    "aspect-[3/4]",
+    "aspect-[4/3]",
+    "aspect-[3/4]",
+    "aspect-square",
+    "aspect-[4/5]",
   ];
 
   return (
-    <section id="resume" className="bg-[#090c0a] px-3 py-16 sm:px-5 lg:px-7 lg:py-24" style={{ minHeight: `${size}vh` }}>
-      <div className="frame-board mx-auto max-w-[1500px] p-0">
-        <header className="module-card grid gap-8 bg-[#151a16] p-6 sm:p-9 lg:grid-cols-[0.8fr_1.2fr] lg:items-end lg:p-11">
-          <div>
-            <p className="font-jakarta text-[10px] font-bold uppercase text-[#df6254]">{content.eyebrow}</p>
-            <h2 className="display-rounded mt-5 max-w-[11ch] text-4xl uppercase leading-[0.92] text-[#ece9df] sm:text-6xl">{content.title}</h2>
+    <section id="resume" className="bg-[#d9d9d5] px-0 lg:px-8" style={{ minHeight: `${size}vh` }}>
+      <div className="editorial-shell mx-auto max-w-[1500px] bg-[#101010] text-white">
+        <header className="grid gap-8 px-5 py-14 sm:px-9 sm:py-20 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:px-16 lg:py-24">
+          <div className="min-w-0">
+            <SectionMarker inverse>{content.eyebrow}</SectionMarker>
+            <h2 className="display-rounded mt-6 w-full max-w-[15ch] text-[34px] uppercase leading-[0.9] sm:text-6xl sm:leading-[0.86] lg:text-[70px]">{content.title}</h2>
           </div>
-          <p className="max-w-2xl text-sm leading-7 text-white/52 lg:justify-self-end">{content.description}</p>
+          <p className="max-w-xl text-sm leading-7 text-white/60 sm:text-base sm:leading-8 lg:justify-self-end">{content.description}</p>
         </header>
 
-        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="h-2 bg-[linear-gradient(90deg,#f5ea28_0_35%,#48dce7_35%_64%,#f044c4_64%_82%,#3149ba_82%)]" />
+
+        <div className="columns-1 gap-2 p-2 sm:columns-2 lg:columns-4">
           {content.items.map((item, index) => (
             <a
               key={item.step}
-              className={`group module-card module-lift flex min-h-[390px] flex-col justify-between p-5 sm:p-6 ${tones[index % tones.length]}`}
+              className={`group relative mb-2 inline-block w-full break-inside-avoid overflow-hidden bg-[#222] ${aspectClasses[index % aspectClasses.length]}`}
               href={detailHref(`resume-${index}`)}
               aria-label={`Open ${item.title} gallery`}
               onClick={rememberHomeScrollPosition}
             >
-              <div className="flex items-start justify-between gap-5">
-                <div className="size-28 overflow-hidden rounded-full bg-black/10 sm:size-32">
-                  <img className="media-zoom h-full w-full object-cover" src={item.asset} alt={item.title} />
-                </div>
-                <ArrowUpRight className="opacity-55 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" size={20} />
-              </div>
-              <div>
-                <span className="font-jakarta text-[11px] font-black opacity-55">{item.step}</span>
-                <h3 className="display-rounded mt-4 text-2xl uppercase leading-[0.95]">{item.title}</h3>
-                <p className="mt-4 line-clamp-4 text-xs leading-5 opacity-62">{item.description}</p>
+              <img className="media-zoom absolute inset-0 h-full w-full object-cover" src={item.asset} alt={item.title} />
+              <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(0,0,0,0.9),transparent_64%)]" />
+              <div className="absolute left-4 top-4 bg-[#f5ea28] px-3 py-2 font-jakarta text-[10px] font-black text-[#090909]">{item.step}</div>
+              <ArrowUpRight className="absolute right-4 top-4 text-white transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" size={21} />
+              <div className="absolute inset-x-5 bottom-5">
+                <h3 className="display-rounded text-2xl uppercase leading-[0.92] sm:text-3xl">{item.title}</h3>
+                <p className="mt-3 line-clamp-2 text-xs leading-5 text-white/66">{item.description}</p>
               </div>
             </a>
           ))}
@@ -243,74 +263,69 @@ export function ResumeSection({ content, size }) {
 }
 
 export function AboutSection({ content, size }) {
-  const previewImages = (content.gallery?.length ? content.gallery : [content.image]).slice(0, 3);
+  const previewImages = (content.gallery?.length ? content.gallery : [content.image]).slice(0, 5);
+  const positions = [
+    "left-[8%] top-[24%] size-16 sm:size-24",
+    "right-[10%] top-[19%] size-20 sm:size-28",
+    "left-[18%] bottom-[16%] size-14 sm:size-20",
+    "right-[22%] bottom-[12%] size-16 sm:size-24",
+    "left-[47%] top-[15%] size-12 sm:size-16",
+  ];
 
   return (
-    <section id="about" className="bg-[#0c100d] px-3 pb-5 pt-16 sm:px-5 lg:px-7 lg:pt-24" style={{ minHeight: `${size}vh` }}>
-      <div className="frame-board mx-auto max-w-[1500px] p-0">
-        <div className="grid gap-2 lg:grid-cols-[1.05fr_0.95fr]">
-          <a
-            className="group module-card module-lift relative min-h-[520px] overflow-hidden bg-[#111512] lg:min-h-[720px]"
-            href={detailHref("about")}
-            aria-label="Open personal gallery"
-            onClick={rememberHomeScrollPosition}
-          >
-            <img className="media-zoom absolute inset-0 h-full w-full object-cover opacity-88" src={content.image} alt={content.name} />
-            <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(8,11,9,0.82)_0%,transparent_58%)]" />
-            <div className="absolute inset-x-6 bottom-6 flex items-end justify-between gap-5 sm:inset-x-8 sm:bottom-8">
-              <div>
-                <p className="text-xl font-black text-[#ece9df]">{content.name}</p>
-                <p className="mt-1 text-xs text-white/58">{content.role}</p>
-              </div>
-              <span className="grid size-12 place-items-center rounded-full bg-[#ece9df] text-[#172018]">
-                <ArrowUpRight size={20} />
-              </span>
-            </div>
-          </a>
-
-          <div className="module-card flex min-h-[520px] flex-col justify-between bg-[#ece9df] p-6 text-[#172018] sm:p-9 lg:min-h-[720px] lg:p-11">
-            <div>
-              <p className="font-jakarta text-[10px] font-black uppercase text-[#cf4c3e]">{content.eyebrow}</p>
-              <h2 className="display-rounded mt-5 max-w-[11ch] text-4xl uppercase leading-[0.92] sm:text-6xl lg:text-[68px]">{content.title}</h2>
-              <p className="mt-8 max-w-2xl text-sm leading-7 text-[#172018]/68 sm:text-base sm:leading-8">{content.bio}</p>
-            </div>
-
-            <div className="mt-12 grid gap-6 border-t border-[#172018]/15 pt-7 sm:grid-cols-2">
-              <div>
-                <p className="text-[10px] font-black uppercase text-[#172018]/45">Email</p>
-                <a className="mt-3 inline-flex items-center gap-2 text-sm font-bold hover:text-[#cf4c3e]" href={`mailto:${content.email}`}>
-                  <Mail size={15} /> {content.email}
-                </a>
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase text-[#172018]/45">Location</p>
-                <p className="mt-3 text-sm font-bold">{content.location}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
+    <section id="about" className="bg-[#d9d9d5] px-0 pb-0 lg:px-8 lg:pb-8" style={{ minHeight: `${size}vh` }}>
+      <div className="editorial-shell mx-auto max-w-[1500px] bg-[#f7f7f2]">
         <a
-          className="module-card mt-2 grid gap-7 bg-[#415241] p-6 text-[#ece9df] sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center"
+          className="group relative block min-h-[700px] overflow-hidden bg-[#090909] sm:min-h-[820px]"
           href={detailHref("about")}
+          aria-label="Open personal gallery"
           onClick={rememberHomeScrollPosition}
         >
-          <div>
-            <p className="text-sm font-black">{content.name}</p>
-            <p className="mt-2 max-w-xl text-xs leading-5 text-white/55">{content.role}</p>
+          <img className="media-zoom absolute inset-0 h-full w-full object-cover grayscale" src={content.image} alt={content.name} />
+          <div className="absolute inset-0 bg-black/56" />
+
+          {previewImages.map((image, index) => (
+            <div key={`${image}-${index}`} className={`absolute hidden overflow-hidden rounded-full border-4 border-white bg-[#d9d9d5] shadow-2xl sm:block ${positions[index]}`}>
+              <img className="h-full w-full object-cover" src={image} alt="" />
+            </div>
+          ))}
+
+          <div className="absolute inset-x-5 top-16 z-10 text-center text-white sm:inset-x-10 sm:top-20">
+            <SectionMarker inverse>{content.eyebrow}</SectionMarker>
+            <h2 className="display-rounded mx-auto mt-7 max-w-[18ch] text-[32px] uppercase leading-[0.92] sm:max-w-[14ch] sm:text-[56px] sm:leading-[0.86] lg:text-[78px]">{content.title}</h2>
           </div>
-          <div className="flex items-center gap-3">
-            {previewImages.map((image, index) => (
-              <div key={`${image}-${index}`} className="size-20 overflow-hidden rounded-full border-4 border-[#ece9df]/80 bg-[#d6d8d2] sm:size-24">
-                <img className="h-full w-full object-cover" src={image} alt="" />
-              </div>
-            ))}
+
+          <div className="absolute bottom-12 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center text-center text-white">
+            <span className="grid size-20 place-items-center rounded-full bg-[#f5ea28] text-[#090909] transition-transform duration-300 group-hover:scale-105">
+              <Play size={26} fill="currentColor" />
+            </span>
+            <p className="mt-5 text-sm font-black uppercase">{content.name}</p>
+            <p className="mt-2 text-xs text-white/62">{content.role}</p>
           </div>
         </a>
 
-        <footer className="module-card mt-2 flex flex-col gap-4 bg-[#151a16] px-6 py-6 text-[11px] text-white/42 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <div className="grid gap-10 px-5 py-14 sm:px-9 sm:py-20 lg:grid-cols-[1.15fr_0.85fr] lg:px-16 lg:py-24">
+          <div>
+            <p className="display-rounded max-w-[15ch] text-4xl uppercase leading-[0.9] text-[#090909] sm:text-6xl">{content.name}</p>
+            <p className="mt-5 text-sm font-black uppercase text-[#090909]/48">{content.role}</p>
+          </div>
+          <div>
+            <p className="max-w-2xl text-sm leading-7 text-[#090909]/66 sm:text-base sm:leading-8">{content.bio}</p>
+            <div className="mt-9 grid gap-5 border-t-2 border-[#090909] pt-7 sm:grid-cols-2">
+              <a className="inline-flex items-center gap-2 text-sm font-black hover:text-[#c5b800]" href={`mailto:${content.email}`}>
+                <Mail size={16} /> {content.email}
+              </a>
+              <p className="text-sm font-black">{content.location}</p>
+            </div>
+            <a className="mt-8 inline-flex min-h-12 items-center gap-3 bg-[#090909] px-5 text-xs font-black uppercase text-white hover:bg-[#f5ea28] hover:text-[#090909]" href={detailHref("about")} onClick={rememberHomeScrollPosition}>
+              Open gallery <ArrowRight size={17} />
+            </a>
+          </div>
+        </div>
+
+        <footer className="flex flex-col gap-4 border-t-2 border-[#090909] bg-white px-5 py-8 text-[11px] font-bold uppercase text-[#090909]/52 sm:flex-row sm:items-center sm:justify-between sm:px-9 lg:px-16">
           <span>{content.name} / {content.role}</span>
-          <a className="font-bold text-white/68 hover:text-[#df6254]" href="#top">Return to top</a>
+          <a className="inline-flex items-center gap-2 text-[#090909] hover:text-[#c5b800]" href="#top">Return to top <ArrowUpRight size={14} /></a>
         </footer>
       </div>
     </section>
