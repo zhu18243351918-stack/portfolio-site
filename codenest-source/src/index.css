@@ -292,6 +292,12 @@ textarea:focus-visible {
 }
 
 @media (max-width: 767px) {
+  #about,
+  #projects,
+  #strengths {
+    min-height: auto !important;
+  }
+
   .hero-scene-video.is-active {
     opacity: 0.74;
   }

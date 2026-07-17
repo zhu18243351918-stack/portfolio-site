@@ -29,7 +29,7 @@ export function ExperienceSection({ content, projectCount, size }) {
     <section
       id="about"
       data-motion-section
-      className="bg-[#08090b] px-5 py-24 text-[#e8e6d8] sm:px-8 sm:py-32 lg:px-12 lg:py-40"
+      className="bg-[#08090b] px-5 py-[clamp(52px,7dvh,72px)] text-[#e8e6d8] sm:px-8 sm:py-32 lg:px-12 lg:py-40"
       style={{ minHeight: `${Math.max(100, size)}vh` }}
     >
       <div className="portfolio-layout mx-auto max-w-[1700px]">
@@ -42,7 +42,7 @@ export function ExperienceSection({ content, projectCount, size }) {
         <div className="mt-12 grid gap-12 lg:grid-cols-[0.82fr_1.18fr] lg:gap-20 xl:gap-28">
           <a
             data-motion-intro
-            className="cursor-target specular-frame group relative block min-h-[620px] overflow-hidden rounded-[6px] bg-[#111317] lg:min-h-[760px]"
+            className="cursor-target specular-frame group relative block h-[clamp(440px,62dvh,500px)] min-h-0 overflow-hidden rounded-[6px] bg-[#111317] sm:h-auto sm:min-h-[620px] lg:min-h-[760px]"
             href={detailHref("about")}
             aria-label="Open personal experience gallery"
             onClick={rememberHomeScrollPosition}
@@ -51,7 +51,7 @@ export function ExperienceSection({ content, projectCount, size }) {
           >
             <img
               data-parallax
-              className="media-zoom absolute inset-x-0 h-full w-full object-cover grayscale-[0.18]"
+              className="media-zoom absolute inset-x-0 h-full w-full object-cover object-[center_36%] grayscale-[0.18] sm:object-center"
               src={content.image}
               alt={content.name}
             />
@@ -117,7 +117,7 @@ export function ProjectsSection({ content, size }) {
     <section
       id="projects"
       data-motion-section
-      className="bg-[#0d0f12] px-5 py-24 text-[#eeeade] sm:px-8 sm:py-28 lg:px-12 lg:py-32"
+      className="bg-[#0d0f12] px-5 py-[clamp(52px,7dvh,72px)] text-[#eeeade] sm:px-8 sm:py-28 lg:px-12 lg:py-32"
       style={{ minHeight: `${Math.max(180, size)}vh` }}
     >
       <div className="portfolio-layout mx-auto max-w-[1700px]">
@@ -142,7 +142,7 @@ export function ProjectsSection({ content, size }) {
             <article
               key={item.index}
               data-motion-card
-              className="cursor-target specular-frame project-feature group relative min-h-[560px] overflow-hidden rounded-[6px] bg-[#15171b] sm:min-h-[680px] lg:min-h-[min(82vh,920px)]"
+              className="cursor-target specular-frame project-feature group relative min-h-[480px] overflow-hidden rounded-[6px] bg-[#15171b] sm:min-h-[680px] lg:min-h-[min(82vh,920px)]"
               onPointerMove={steerSpecularEdge}
               onPointerLeave={resetSpecularEdge}
             >
@@ -181,7 +181,7 @@ export function StrengthsSection({ content, capabilities, size }) {
     <section
       id="strengths"
       data-motion-section
-      className="bg-[#08090b] px-5 py-24 text-[#e8e6d8] sm:px-8 sm:py-28 lg:px-12 lg:py-32"
+      className="bg-[#08090b] px-5 py-[clamp(52px,7dvh,72px)] text-[#e8e6d8] sm:px-8 sm:py-28 lg:px-12 lg:py-32"
       style={{ minHeight: `${Math.max(110, size)}vh` }}
     >
       <div className="portfolio-layout mx-auto max-w-[1700px]">
@@ -204,7 +204,7 @@ export function StrengthsSection({ content, capabilities, size }) {
             <a
               key={`${item.category}-${item.title}`}
               data-motion-card
-              className="cursor-target specular-frame specular-frame--quiet group relative block min-h-[470px] overflow-hidden rounded-[6px] border border-white/10 bg-[#14161a]"
+              className="cursor-target specular-frame specular-frame--quiet group relative block min-h-[400px] overflow-hidden rounded-[6px] border border-white/10 bg-[#14161a] sm:min-h-[470px]"
               href={detailHref(`blog-${index}`)}
               onClick={rememberHomeScrollPosition}
               onPointerMove={steerSpecularEdge}
@@ -226,7 +226,7 @@ export function StrengthsSection({ content, capabilities, size }) {
           ))}
         </div>
 
-        <div data-motion-subsection className="mt-20 lg:mt-28">
+        <div data-motion-subsection className="mt-14 sm:mt-20 lg:mt-28">
           <div data-motion-header className="flex flex-col gap-5 border-b border-white/14 pb-7 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p data-motion-label className="text-[10px] font-bold uppercase text-[#e5ff48]">{capabilities.eyebrow}</p>
@@ -247,7 +247,7 @@ export function StrengthsSection({ content, capabilities, size }) {
               <a
                 key={item.step}
                 data-motion-card
-                className={`cursor-target group min-h-[300px] border-white/12 p-6 transition-colors hover:bg-[#11141a] sm:p-8 ${index % 4 ? "lg:border-l" : ""} ${index >= 4 ? "border-t" : ""} ${index % 2 ? "sm:border-l" : ""}`}
+                className={`cursor-target group min-h-[220px] border-white/12 p-5 transition-colors hover:bg-[#11141a] sm:min-h-[300px] sm:p-8 ${index % 4 ? "lg:border-l" : ""} ${index >= 4 ? "border-t" : ""} ${index % 2 ? "sm:border-l" : ""}`}
                 href={detailHref(`resume-${index}`)}
                 onClick={rememberHomeScrollPosition}
               >
@@ -255,7 +255,7 @@ export function StrengthsSection({ content, capabilities, size }) {
                   <span>{item.step}</span>
                   <ArrowUpRight className="opacity-0 transition-opacity group-hover:opacity-100" size={16} />
                 </div>
-                <h4 className="display-editorial mt-16 text-3xl leading-none text-[#efede1]">{item.title}</h4>
+                <h4 className="display-editorial mt-10 text-3xl leading-none text-[#efede1] sm:mt-16">{item.title}</h4>
                 <p className="mt-5 text-sm leading-7 text-[#cfcdc1]/48">{item.description}</p>
               </a>
             ))}
@@ -271,7 +271,7 @@ export function ContactSection({ content }) {
     <section
       id="contact"
       data-motion-section
-      className="relative flex min-h-[100dvh] items-end overflow-hidden bg-[#08090b] px-5 py-10 text-[#efede1] sm:px-8 sm:py-12 lg:px-12 lg:py-16"
+      className="relative flex min-h-[82dvh] items-end overflow-hidden bg-[#08090b] px-5 py-[clamp(36px,5dvh,52px)] text-[#efede1] sm:min-h-[100dvh] sm:px-8 sm:py-12 lg:px-12 lg:py-16"
     >
       <img data-parallax className="absolute inset-x-0 h-full w-full object-cover opacity-18 grayscale" src="./portfolio/contact.webp" alt="" aria-hidden="true" />
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,7,9,0.38),rgba(6,7,9,0.98)_82%)]" />
