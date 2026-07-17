@@ -12,9 +12,7 @@ export const DEFAULT_CONTENT = {
   description:
     "Master in-demand coding skills through focused projects, expert feedback, and a portfolio designed to get you hired.",
   ctaLabel: "Get Started",
-  mediaMode: "video",
-  videoUrl:
-    "https://stream.mux.com/tLkHO1qZoaaQOUeVWo8hEBeGQfySP02EPS02BmnNFyXys.m3u8",
+  mediaMode: "galaxy",
   backgroundImage: "",
   card: {
     year: "[ 2025 ]",

@@ -1,4 +1,6 @@
 *.log
 .DS_Store
 Thumbs.db
+codenest-source/node_modules/
+codenest-source/dist/
 

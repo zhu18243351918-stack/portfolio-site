@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowRight,
   Check,
@@ -11,14 +11,15 @@ import {
   RotateCcw,
   Save,
   Settings,
+  Sparkles,
   Trash2,
   Upload,
-  Video,
   X,
 } from "lucide-react";
 import { CONTENT_STORAGE_KEY, DEFAULT_CONTENT } from "./content";
 import { AboutSection, BlogSection, ProjectsSection, ResumeSection } from "./Sections";
 import DetailPage from "./DetailPage";
+import Galaxy from "./Galaxy";
 import { consumeHomeScrollPosition } from "./scrollPosition";
 import {
   fetchRemoteContent,
@@ -39,6 +40,8 @@ const navTargets = [
 const CONTENT_DB_NAME = "codenest-editor";
 const CONTENT_STORE_NAME = "content";
 const CONTENT_RECORD_KEY = "current";
+const GALAXY_FOCAL = [0.68, 0.44];
+const GALAXY_ROTATION = [0.96, 0.18];
 
 function mergeContent(value = {}) {
   const mergeItems = (defaults, incoming = []) =>
@@ -47,6 +50,7 @@ function mergeContent(value = {}) {
   return {
     ...DEFAULT_CONTENT,
     ...value,
+    mediaMode: value.mediaMode === "image" ? "image" : "galaxy",
     card: {
       ...DEFAULT_CONTENT.card,
       ...(value.card || {}),
@@ -218,37 +222,23 @@ function optimizeImage(file) {
   });
 }
 
-function BackgroundMedia({ content }) {
-  const videoRef = useRef(null);
+function useReducedMotion() {
+  const [reducedMotion, setReducedMotion] = useState(
+    () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
+  );
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video || content.mediaMode !== "video" || !content.videoUrl) return undefined;
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleChange = (event) => setReducedMotion(event.matches);
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
-    let hls;
-    let cancelled = false;
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = content.videoUrl;
-    } else {
-      import("hls.js").then(({ default: Hls }) => {
-        if (cancelled || !Hls.isSupported()) return;
-        hls = new Hls({ enableWorker: false, lowLatencyMode: false });
-        hls.loadSource(content.videoUrl);
-        hls.attachMedia(video);
-      });
-    }
+  return reducedMotion;
+}
 
-    const beginPlayback = () => video.play().catch(() => undefined);
-    video.addEventListener("canplay", beginPlayback);
-
-    return () => {
-      cancelled = true;
-      video.removeEventListener("canplay", beginPlayback);
-      hls?.destroy();
-      video.removeAttribute("src");
-      video.load();
-    };
-  }, [content.mediaMode, content.videoUrl]);
+function BackgroundMedia({ content }) {
+  const reducedMotion = useReducedMotion();
 
   if (content.mediaMode === "image" && content.backgroundImage) {
     return (
@@ -262,15 +252,26 @@ function BackgroundMedia({ content }) {
   }
 
   return (
-    <video
-      ref={videoRef}
-      className="absolute inset-0 h-full w-full object-cover opacity-60"
-      autoPlay
-      muted
-      loop
-      playsInline
-      aria-hidden="true"
-    />
+    <div className="absolute inset-0 bg-[#020504]" aria-hidden="true">
+      <Galaxy
+        className="opacity-90"
+        focal={GALAXY_FOCAL}
+        rotation={GALAXY_ROTATION}
+        starSpeed={0.34}
+        density={0.82}
+        hueShift={122}
+        speed={0.48}
+        glowIntensity={0.54}
+        saturation={0.42}
+        mouseInteraction={!reducedMotion}
+        mouseRepulsion
+        repulsionStrength={2.8}
+        twinkleIntensity={0.2}
+        rotationSpeed={0.018}
+        disableAnimation={reducedMotion}
+        transparent={false}
+      />
+    </div>
   );
 }
 
@@ -781,14 +782,14 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                     <div className="grid grid-cols-2 gap-2" aria-label="Background type">
                       <button
                         className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
-                          draft.mediaMode === "video"
+                          draft.mediaMode !== "image"
                             ? "border-[#5ed29c] bg-[#5ed29c] text-[#070b0a]"
                             : "border-white/15 text-white/65"
                         }`}
                         type="button"
-                        onClick={() => update("mediaMode", "video")}
+                        onClick={() => update("mediaMode", "galaxy")}
                       >
-                        <Video size={15} /> Video
+                        <Sparkles size={15} /> Galaxy
                       </button>
                       <button
                         className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
@@ -803,9 +804,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                       </button>
                     </div>
 
-                    {draft.mediaMode === "video" ? (
-                      <Field label="HLS video URL" value={draft.videoUrl} onChange={(event) => update("videoUrl", event.target.value)} />
-                    ) : (
+                    {draft.mediaMode === "image" && (
                       <>
                         <Field
                           label="Background image URL"
@@ -1302,9 +1301,9 @@ function App() {
     <main id="top" className="min-h-[100dvh] overflow-x-clip bg-[#070b0a] text-white">
       <div className="relative min-h-[100dvh] overflow-hidden">
         <BackgroundMedia content={content} />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,#070b0a_0%,rgba(7,11,10,0.88)_28%,rgba(7,11,10,0.18)_72%,transparent_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(0deg,#070b0a_0%,rgba(7,11,10,0.72)_18%,transparent_58%)]" />
-        <div className="absolute inset-0 bg-black/10" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#070b0a_0%,rgba(7,11,10,0.88)_28%,rgba(7,11,10,0.18)_72%,transparent_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,#070b0a_0%,rgba(7,11,10,0.72)_18%,transparent_58%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-black/10" />
         <CentralGlow />
         <GridLines />
 
