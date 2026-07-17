@@ -1,5 +1,6 @@
 import { ArrowRight, ArrowUpRight, Mail, MapPin } from "lucide-react";
 import { rememberHomeScrollPosition } from "./scrollPosition";
+import { resetSpecularEdge, steerSpecularEdge } from "./specularEdge";
 
 function detailHref(id) {
   const contentHash = window.location.hash.startsWith("#content=") ? window.location.hash : "";
@@ -41,10 +42,12 @@ export function ExperienceSection({ content, projectCount, size }) {
         <div className="mt-12 grid gap-12 lg:grid-cols-[0.82fr_1.18fr] lg:gap-20 xl:gap-28">
           <a
             data-motion-intro
-            className="group relative block min-h-[620px] overflow-hidden rounded-[6px] bg-[#111317] lg:min-h-[760px]"
+            className="specular-frame group relative block min-h-[620px] overflow-hidden rounded-[6px] bg-[#111317] lg:min-h-[760px]"
             href={detailHref("about")}
             aria-label="Open personal experience gallery"
             onClick={rememberHomeScrollPosition}
+            onPointerMove={steerSpecularEdge}
+            onPointerLeave={resetSpecularEdge}
           >
             <img
               data-parallax
@@ -75,7 +78,12 @@ export function ExperienceSection({ content, projectCount, size }) {
               <p data-motion-copy className="mt-9 max-w-3xl text-base leading-8 text-[#d0cec2]/66 sm:text-lg sm:leading-9">{content.bio}</p>
             </div>
 
-            <div data-motion-copy className="mt-14 grid grid-cols-2 border-y border-white/14 sm:grid-cols-4 lg:mt-20">
+            <div
+              data-motion-copy
+              className="specular-frame specular-frame--quiet mt-14 grid grid-cols-2 overflow-hidden rounded-[6px] border-y border-white/14 sm:grid-cols-4 lg:mt-20"
+              onPointerMove={steerSpecularEdge}
+              onPointerLeave={resetSpecularEdge}
+            >
               {stats.map(([value, label], index) => (
                 <div key={label} className={`py-7 sm:px-5 lg:py-9 ${index ? "border-l border-white/14" : ""}`}>
                   <strong className="display-editorial text-4xl font-medium text-[#f1efe4] sm:text-5xl">{value}</strong>
@@ -129,7 +137,9 @@ export function ProjectsSection({ content, size }) {
             <article
               key={item.index}
               data-motion-card
-              className="project-feature group relative min-h-[560px] overflow-hidden rounded-[6px] bg-[#15171b] sm:min-h-[680px] lg:min-h-[min(82vh,920px)]"
+              className="specular-frame project-feature group relative min-h-[560px] overflow-hidden rounded-[6px] bg-[#15171b] sm:min-h-[680px] lg:min-h-[min(82vh,920px)]"
+              onPointerMove={steerSpecularEdge}
+              onPointerLeave={resetSpecularEdge}
             >
               <a
                 className="absolute inset-0"
@@ -189,9 +199,11 @@ export function StrengthsSection({ content, capabilities, size }) {
             <a
               key={`${item.category}-${item.title}`}
               data-motion-card
-              className="group relative block min-h-[470px] overflow-hidden rounded-[6px] border border-white/10 bg-[#14161a]"
+              className="specular-frame specular-frame--quiet group relative block min-h-[470px] overflow-hidden rounded-[6px] border border-white/10 bg-[#14161a]"
               href={detailHref(`blog-${index}`)}
               onClick={rememberHomeScrollPosition}
+              onPointerMove={steerSpecularEdge}
+              onPointerLeave={resetSpecularEdge}
             >
               <img data-parallax className="media-zoom absolute inset-x-0 h-full w-full object-cover opacity-55 grayscale-[0.28]" src={item.asset} alt={item.title} />
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,8,10,0.15),rgba(7,8,10,0.92))]" />
@@ -220,7 +232,12 @@ export function StrengthsSection({ content, capabilities, size }) {
             <p data-motion-copy className="max-w-xl text-sm leading-7 text-[#cfcdc1]/52">{capabilities.description}</p>
           </div>
 
-          <div data-motion-group className="grid sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            data-motion-group
+            className="specular-frame specular-frame--quiet grid overflow-hidden rounded-[6px] sm:grid-cols-2 lg:grid-cols-4"
+            onPointerMove={steerSpecularEdge}
+            onPointerLeave={resetSpecularEdge}
+          >
             {capabilities.items.map((item, index) => (
               <a
                 key={item.step}

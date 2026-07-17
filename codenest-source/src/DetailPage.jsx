@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Pause, Play, Settings } from "lucide-react";
+import { resetSpecularEdge, steerSpecularEdge } from "./specularEdge";
 
 function resolveDetail(detailId, content) {
   if (detailId?.startsWith("project-")) {
@@ -156,7 +157,12 @@ export default function DetailPage({ detailId, content, onEdit }) {
 
       <section className="relative z-10 px-0 pb-12 pt-[84px] sm:px-8 sm:pb-16 lg:px-12 lg:pb-24 lg:pt-28">
         <div className="mx-auto max-w-[1700px]">
-          <div className="relative overflow-hidden border-y border-white/14 bg-[#0d0f12] sm:rounded-[6px] sm:border" style={{ height: `${detail.galleryHeight}vh`, minHeight: "460px", maxHeight: "980px" }}>
+          <div
+            className="specular-frame relative overflow-hidden border-y border-white/14 bg-[#0d0f12] sm:rounded-[6px] sm:border"
+            style={{ height: `${detail.galleryHeight}vh`, minHeight: "460px", maxHeight: "980px" }}
+            onPointerMove={steerSpecularEdge}
+            onPointerLeave={resetSpecularEdge}
+          >
             <div
               ref={trackRef}
               className="gallery-track flex h-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
