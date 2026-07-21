@@ -364,30 +364,6 @@ function readInitialContent() {
   }
 }
 
-function optimizeImage(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Unable to read this image."));
-    reader.onload = () => {
-      const image = new Image();
-      image.onerror = () => reject(new Error("Unable to process this image."));
-      image.onload = () => {
-        const maxWidth = 1920;
-        const maxHeight = 1200;
-        const ratio = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(image.width * ratio));
-        canvas.height = Math.max(1, Math.round(image.height * ratio));
-        const context = canvas.getContext("2d");
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/webp", 0.82));
-      };
-      image.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
 function useReducedMotion() {
   const [reducedMotion, setReducedMotion] = useState(
     () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
@@ -950,10 +926,9 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
     }
     setIsUploading(true);
     try {
-      const image = await optimizeImage(file);
-      const publicUrl = await onUpload(image, area);
+      const publicUrl = await onUpload(file, area);
       applyValue(publicUrl);
-      setNotice("Image uploaded. Click Save changes to publish the new URL.");
+      setNotice("Original image uploaded without recompression. Click Save changes to publish the new URL.");
     } catch (imageError) {
       setNotice(imageError.message || "Unable to upload this image.");
     } finally {

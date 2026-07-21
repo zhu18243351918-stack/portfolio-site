@@ -165,7 +165,7 @@ export default function DetailPage({ detailId, content, onEdit }) {
           >
             <div
               ref={trackRef}
-              className="gallery-track flex h-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
+              className="gallery-track flex h-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain"
               aria-label={`${detail.title} image gallery`}
               tabIndex="0"
               onKeyDown={(event) => {
@@ -179,10 +179,16 @@ export default function DetailPage({ detailId, content, onEdit }) {
                   ref={(node) => {
                     slideRefs.current[index] = node;
                   }}
-                  className="relative grid h-full min-w-full snap-center place-items-center bg-[#0b0d10] p-0 sm:p-4 lg:p-7"
+                  className="relative h-full min-w-full snap-center overflow-hidden bg-[#0b0d10]"
                   data-slide-index={index}
                 >
-                  <img className="h-full w-full object-contain" src={image} alt={`${detail.title} slide ${index + 1}`} />
+                  <div className="absolute inset-0 grid place-items-center p-0 sm:p-4 lg:p-7">
+                    <img
+                      className="block h-auto w-auto max-h-full max-w-full object-contain"
+                      src={image}
+                      alt={`${detail.title} slide ${index + 1}`}
+                    />
+                  </div>
                 </figure>
               ))}
             </div>

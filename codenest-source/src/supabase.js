@@ -61,16 +61,20 @@ function extensionForType(type) {
   if (type === "image/png") return "png";
   if (type === "image/jpeg") return "jpg";
   if (type === "image/gif") return "gif";
+  if (type === "image/avif") return "avif";
+  if (type === "image/svg+xml") return "svg";
   return "webp";
 }
 
-export async function uploadPortfolioImage(dataUrl, area = "content") {
-  const response = await fetch(dataUrl);
-  const blob = await response.blob();
+export async function uploadPortfolioImage(source, area = "content") {
+  const blob =
+    typeof source === "string"
+      ? await fetch(source).then((response) => response.blob())
+      : source;
   const extension = extensionForType(blob.type);
   const filename = `${area}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
   const { error } = await supabase.storage.from(ASSET_BUCKET).upload(filename, blob, {
-    cacheControl: "3600",
+    cacheControl: "31536000",
     contentType: blob.type,
     upsert: false,
   });
