@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Pause, Play, Settings } from "lucide-react";
+import MusicPlayer from "./MusicPlayer";
 import { handleTransitionLink } from "./pageTransition";
 import { resetSpecularEdge, steerSpecularEdge } from "./specularEdge";
 
@@ -145,6 +146,7 @@ export default function DetailPage({ detailId, content, onEdit }) {
             <DetailLogo brand={content.brand} logoImage={content.logoImage} />
           </a>
           <div className="flex items-center gap-2">
+            <MusicPlayer />
             <button className="cursor-target grid size-11 place-items-center rounded-full border border-white/18 bg-white/6 text-white md:hidden" type="button" aria-label="Edit page content" onClick={onEdit}>
               <Settings size={17} />
             </button>

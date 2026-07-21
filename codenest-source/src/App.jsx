@@ -23,6 +23,7 @@ import { setupHomeAnimations, shouldPlayOpening } from "./animations";
 import DetailPage from "./DetailPage";
 import Galaxy from "./Galaxy";
 import LineSidebar from "./LineSidebar";
+import MusicPlayer from "./MusicPlayer";
 import NavigationTransition from "./NavigationTransition";
 import TargetCursor from "./TargetCursor";
 import { requestPageTransition } from "./pageTransition";
@@ -675,6 +676,7 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <MusicPlayer />
             <a className="cursor-target hidden min-h-11 items-center gap-3 rounded-full bg-[#e5ff48] px-5 text-[10px] font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-0.5 sm:inline-flex" href="#contact">
               Contact <ArrowRight size={15} />
             </a>
