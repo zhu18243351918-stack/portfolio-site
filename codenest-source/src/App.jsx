@@ -23,7 +23,9 @@ import { setupHomeAnimations, shouldPlayOpening } from "./animations";
 import DetailPage from "./DetailPage";
 import Galaxy from "./Galaxy";
 import LineSidebar from "./LineSidebar";
+import NavigationTransition from "./NavigationTransition";
 import TargetCursor from "./TargetCursor";
+import { requestPageTransition } from "./pageTransition";
 import { consumeHomeScrollPosition, storeHomeScrollPosition } from "./scrollPosition";
 import {
   fetchRemoteContent,
@@ -36,6 +38,7 @@ import {
 } from "./supabase";
 
 const navTargets = [
+  { key: "home", href: "#top" },
   { key: "about", href: "#about" },
   { key: "projects", href: "#projects" },
   { key: "resume", href: "#strengths" },
@@ -135,6 +138,8 @@ function migratedText(value, legacyValues, fallback) {
 }
 
 function mergeContent(value = {}) {
+  const incomingAboutSize = Number(value.sectionSizes?.about);
+
   return {
     ...DEFAULT_CONTENT,
     ...value,
@@ -161,6 +166,7 @@ function mergeContent(value = {}) {
     navigation: {
       ...DEFAULT_CONTENT.navigation,
       ...(value.navigation || {}),
+      home: value.navigation?.home?.trim() || DEFAULT_CONTENT.navigation.home,
       projects: migratedText(value.navigation?.projects, ["PROJECTS", "工作介绍"], DEFAULT_CONTENT.navigation.projects),
       blog: migratedText(value.navigation?.blog, ["BLOG", "工作内容"], DEFAULT_CONTENT.navigation.blog),
       resume: migratedText(value.navigation?.resume, ["RESUME", "其他"], DEFAULT_CONTENT.navigation.resume),
@@ -169,6 +175,10 @@ function mergeContent(value = {}) {
     sectionSizes: {
       ...DEFAULT_CONTENT.sectionSizes,
       ...(value.sectionSizes || {}),
+      about:
+        incomingAboutSize === 120
+          ? DEFAULT_CONTENT.sectionSizes.about
+          : Math.min(100, Math.max(70, incomingAboutSize || DEFAULT_CONTENT.sectionSizes.about)),
     },
     projects: {
       ...DEFAULT_CONTENT.projects,
@@ -237,7 +247,12 @@ function mergeContent(value = {}) {
         ["CodeNest was built around a simple belief: people learn faster when the work feels real, the feedback is specific, and the path is calm enough to follow. Replace this text with your own background, teaching philosophy, experience, and the kind of students or clients you want to work with."],
         DEFAULT_CONTENT.about.bio,
       ),
+      stats: DEFAULT_CONTENT.about.stats.map((stat, index) => ({
+        ...stat,
+        ...(Array.isArray(value.about?.stats) ? value.about.stats[index] : {}),
+      })),
       email: migratedText(value.about?.email, ["hello@codenest.dev"], DEFAULT_CONTENT.about.email),
+      wechat: value.about?.wechat ?? DEFAULT_CONTENT.about.wechat,
       location: migratedText(value.about?.location, ["Remote / Worldwide"], DEFAULT_CONTENT.about.location),
       image:
         value.about?.image === "https://cnlfvmxwohyvksbbtplw.supabase.co/storage/v1/object/public/portfolio-assets/about/1784108950962-f6f94c8f-1b9f-4307-af1b-ee934d7f89a0.webp"
@@ -707,9 +722,9 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
             >
               <span className="flex items-center gap-3">
                 <Settings size={20} />
-                Edit content
+                编辑内容
               </span>
-              <span className="font-jakarta text-[10px]">ADMIN</span>
+              <span className="font-jakarta text-[10px]">管理</span>
             </button>
           </div>
           <p className="max-w-72 text-xs font-medium leading-6 text-white/38">
@@ -736,14 +751,14 @@ function Field({ label, value, onChange, multiline = false }) {
   );
 }
 
-function UploadButton({ label = "Upload image", onChange, disabled = false }) {
+function UploadButton({ label = "上传图片", onChange, disabled = false }) {
   return (
     <label
       className={`flex min-h-10 items-center justify-center gap-2 border border-dashed border-white/20 text-[10px] font-bold uppercase text-white/55 transition-colors ${
         disabled ? "cursor-wait opacity-45" : "cursor-pointer hover:border-[#f5ea28] hover:text-[#f5ea28]"
       }`}
     >
-      <Upload size={14} /> {disabled ? "Uploading..." : label}
+      <Upload size={14} /> {disabled ? "上传中..." : label}
       <input className="sr-only" type="file" accept="image/*" disabled={disabled} onChange={onChange} />
     </label>
   );
@@ -824,7 +839,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
       setError("");
       setPassword("");
     } catch (authError) {
-      setError(authError.message || "Unable to sign in.");
+      setError("登录失败，请检查邮箱和密码后重试。");
     } finally {
       setIsAuthenticating(false);
     }
@@ -850,6 +865,16 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
         ...current[section],
         items: current[section].items.map((item, itemIndex) =>
           itemIndex === index ? { ...item, [key]: value } : item,
+        ),
+      },
+    }));
+  const updateAboutStat = (index, key, value) =>
+    setDraft((current) => ({
+      ...current,
+      about: {
+        ...current.about,
+        stats: current.about.stats.map((stat, statIndex) =>
+          statIndex === index ? { ...stat, [key]: value } : stat,
         ),
       },
     }));
@@ -921,16 +946,16 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
     const file = event.target.files?.[0];
     if (!file) return;
     if (file.size > 12 * 1024 * 1024) {
-      setNotice("Please choose an image smaller than 12 MB.");
+      setNotice("请选择小于 12MB 的图片。");
       return;
     }
     setIsUploading(true);
     try {
       const publicUrl = await onUpload(file, area);
       applyValue(publicUrl);
-      setNotice("Original image uploaded without recompression. Click Save changes to publish the new URL.");
+      setNotice("原图已上传，未进行二次压缩。点击“保存修改”后发布。");
     } catch (imageError) {
-      setNotice(imageError.message || "Unable to upload this image.");
+      setNotice("图片上传失败，请稍后重试。");
     } finally {
       setIsUploading(false);
       event.target.value = "";
@@ -961,12 +986,12 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
       setCopied(true);
       setNotice(
         containsLocalImage(draft)
-          ? "Share link copied. Local uploads are excluded; use public image URLs when sharing."
-          : "Share link copied with the current text and image URLs.",
+          ? "分享链接已复制。本地图片不会包含在链接中，请先上传为公开图片。"
+          : "分享链接已复制，包含当前文字和图片链接。",
       );
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      setNotice("Unable to copy the share link. Please allow clipboard access and try again.");
+      setNotice("无法复制分享链接，请允许剪贴板权限后重试。");
     }
   };
 
@@ -975,8 +1000,8 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
       <button
         className="cursor-target fixed bottom-5 right-5 z-30 hidden size-12 place-items-center rounded-full border border-white/20 bg-black/52 text-white shadow-2xl backdrop-blur-md transition-colors hover:border-[#e5ff48] hover:text-[#e5ff48] md:grid"
         type="button"
-        title="Edit content"
-        aria-label="Edit page content"
+        title="编辑内容"
+        aria-label="编辑页面内容"
         onClick={() => setIsOpen(true)}
       >
         <Settings size={19} />
@@ -989,9 +1014,9 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
               <div className="flex items-center gap-3">
                 <Settings size={17} className="text-[#f5ea28]" />
                 <div>
-                  <p className="text-sm font-bold">Content editor</p>
+                  <p className="text-sm font-bold">内容编辑器</p>
                   <p className={`text-[10px] ${cloudStatus === "online" ? "text-[#f5ea28]" : "text-white/45"}`}>
-                    {cloudStatus === "online" ? "Supabase connected" : cloudStatus === "connecting" ? "Connecting..." : "Local fallback"}
+                    {cloudStatus === "online" ? "Supabase 已连接" : cloudStatus === "connecting" ? "正在连接..." : "本地预览模式"}
                   </p>
                 </div>
               </div>
@@ -1000,14 +1025,14 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                   <button
                     className="grid size-10 place-items-center text-white/55 hover:text-[#f5ea28]"
                     type="button"
-                    title="Sign out"
-                    aria-label="Sign out of editor"
+                    title="退出登录"
+                    aria-label="退出编辑器登录"
                     onClick={onSignOut}
                   >
                     <LogOut size={17} />
                   </button>
                 )}
-                <button className="grid size-10 place-items-center" type="button" aria-label="Close editor" onClick={closeEditor}>
+                <button className="grid size-10 place-items-center" type="button" aria-label="关闭编辑器" onClick={closeEditor}>
                   <X size={20} />
                 </button>
               </div>
@@ -1016,10 +1041,10 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
             {!isUnlocked ? (
               <form className="flex flex-1 flex-col justify-center p-6" onSubmit={unlock}>
                 <LockKeyhole size={28} className="text-[#f5ea28]" />
-                <h2 className="mt-5 text-2xl font-extrabold">Admin sign in</h2>
-                <p className="mt-2 max-w-xs text-sm leading-6 text-white/55">Use the portfolio administrator account created in Supabase Auth.</p>
+                <h2 className="mt-5 text-2xl font-extrabold">管理员登录</h2>
+                <p className="mt-2 max-w-xs text-sm leading-6 text-white/55">使用在 Supabase Auth 中创建的作品集管理员账号登录。</p>
                 <label className="mt-7 text-[11px] font-bold uppercase text-white/55">
-                  Email
+                  邮箱
                   <input
                     className="mt-2 w-full rounded-[10px] border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#f5ea28]"
                     type="email"
@@ -1030,7 +1055,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                   />
                 </label>
                 <label className="mt-4 text-[11px] font-bold uppercase text-white/55">
-                  Password
+                  密码
                   <input
                     className="mt-2 w-full rounded-[10px] border border-white/15 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none focus:border-[#f5ea28]"
                     type="password"
@@ -1045,46 +1070,51 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                   type="submit"
                   disabled={isAuthenticating || !email.trim() || !password}
                 >
-                  {isAuthenticating ? "Signing in..." : "Sign in"}
+                  {isAuthenticating ? "登录中..." : "登录"}
                 </button>
               </form>
             ) : (
               <>
                 <div className="flex-1 space-y-4 overflow-y-auto p-5">
-                  <EditorGroup title="Site & navigation" open>
-                    <Field label="Brand" value={draft.brand} onChange={(event) => update("brand", event.target.value)} />
+                  <EditorGroup title="网站与导航" open>
+                    <Field label="品牌名称" value={draft.brand} onChange={(event) => update("brand", event.target.value)} />
                     <Field
-                      label="Logo image URL"
+                      label="Logo 图片链接"
                       value={draft.logoImage?.startsWith("data:") ? "" : draft.logoImage}
                       onChange={(event) => update("logoImage", event.target.value)}
                     />
-                    <UploadButton label="Upload logo" disabled={isUploading} onChange={handleLogoImage} />
+                    <UploadButton label="上传 Logo" disabled={isUploading} onChange={handleLogoImage} />
                     <div className="h-px bg-white/10" />
-                    <p className="text-[10px] font-bold uppercase text-white/35">Menu labels</p>
+                    <p className="text-[10px] font-bold uppercase text-white/35">菜单文字</p>
                     <Field
-                      label="Projects label"
+                      label="首页菜单文字"
+                      value={draft.navigation.home}
+                      onChange={(event) => updateSection("navigation", "home", event.target.value)}
+                    />
+                    <Field
+                      label="关于我菜单文字"
+                      value={draft.navigation.about}
+                      onChange={(event) => updateSection("navigation", "about", event.target.value)}
+                    />
+                    <Field
+                      label="精选项目菜单文字"
                       value={draft.navigation.projects}
                       onChange={(event) => updateSection("navigation", "projects", event.target.value)}
                     />
                     <Field
-                      label="Blog label"
+                      label="联系菜单文字"
                       value={draft.navigation.blog}
                       onChange={(event) => updateSection("navigation", "blog", event.target.value)}
                     />
                     <Field
-                      label="Resume label"
+                      label="个人优势菜单文字"
                       value={draft.navigation.resume}
                       onChange={(event) => updateSection("navigation", "resume", event.target.value)}
                     />
-                    <Field
-                      label="About label"
-                      value={draft.navigation.about}
-                      onChange={(event) => updateSection("navigation", "about", event.target.value)}
-                    />
                   </EditorGroup>
 
-                  <EditorGroup title="Hero section">
-                    <div className="grid grid-cols-3 gap-2" aria-label="Background type">
+                  <EditorGroup title="首屏设置">
+                    <div className="grid grid-cols-3 gap-2" aria-label="背景类型">
                       <button
                         className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
                           draft.mediaMode === "video"
@@ -1094,7 +1124,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                         type="button"
                         onClick={() => update("mediaMode", "video")}
                       >
-                        <Clapperboard size={15} /> Video
+                        <Clapperboard size={15} /> 视频
                       </button>
                       <button
                         className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
@@ -1105,7 +1135,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                         type="button"
                         onClick={() => update("mediaMode", "galaxy")}
                       >
-                        <Sparkles size={15} /> Galaxy
+                        <Sparkles size={15} /> 星空
                       </button>
                       <button
                         className={`flex min-h-11 items-center justify-center gap-2 border text-xs font-bold ${
@@ -1116,13 +1146,13 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                         type="button"
                         onClick={() => update("mediaMode", "image")}
                       >
-                        <ImageIcon size={15} /> Image
+                        <ImageIcon size={15} /> 图片
                       </button>
                     </div>
 
                     {draft.mediaMode === "video" && (
                       <Field
-                        label="Background video URL (MP4 or HLS)"
+                        label="背景视频链接（MP4 或 HLS）"
                         value={draft.videoUrl || ""}
                         onChange={(event) => update("videoUrl", event.target.value)}
                       />
@@ -1131,80 +1161,73 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                     {draft.mediaMode === "image" && (
                       <>
                         <Field
-                          label="Background image URL"
+                          label="背景图片链接"
                           value={draft.backgroundImage?.startsWith("data:") ? "" : draft.backgroundImage}
                           onChange={(event) => update("backgroundImage", event.target.value)}
                         />
-                        <UploadButton label="Upload background" disabled={isUploading} onChange={handleImage} />
+                        <UploadButton label="上传背景图片" disabled={isUploading} onChange={handleImage} />
                       </>
                     )}
 
-                    <Field label="Eyebrow" value={draft.eyebrow} onChange={(event) => update("eyebrow", event.target.value)} />
-                    <Field label="Headline" value={draft.headline} onChange={(event) => update("headline", event.target.value)} />
-                    <Field label="Description" value={draft.description} multiline onChange={(event) => update("description", event.target.value)} />
-                    <Field label="CTA label" value={draft.ctaLabel} onChange={(event) => update("ctaLabel", event.target.value)} />
+                    <Field label="小标题" value={draft.eyebrow} onChange={(event) => update("eyebrow", event.target.value)} />
+                    <Field label="主标题" value={draft.headline} onChange={(event) => update("headline", event.target.value)} />
+                    <Field label="描述文字" value={draft.description} multiline onChange={(event) => update("description", event.target.value)} />
+                    <Field label="主按钮文字" value={draft.ctaLabel} onChange={(event) => update("ctaLabel", event.target.value)} />
                     <div className="h-px bg-white/10" />
-                    <p className="text-[10px] font-bold uppercase text-white/35">Glass card</p>
-                    <Field label="Year tag" value={draft.card.year} onChange={(event) => updateCard("year", event.target.value)} />
+                    <p className="text-[10px] font-bold uppercase text-white/35">首屏信息卡</p>
+                    <Field label="年份标签" value={draft.card.year} onChange={(event) => updateCard("year", event.target.value)} />
                     <div className="grid grid-cols-2 gap-3">
-                      <Field label="Lead" value={draft.card.lead} onChange={(event) => updateCard("lead", event.target.value)} />
-                      <Field label="Serif word" value={draft.card.accent} onChange={(event) => updateCard("accent", event.target.value)} />
+                      <Field label="前段文字" value={draft.card.lead} onChange={(event) => updateCard("lead", event.target.value)} />
+                      <Field label="强调词" value={draft.card.accent} onChange={(event) => updateCard("accent", event.target.value)} />
                     </div>
-                    <Field label="Tail" value={draft.card.tail} onChange={(event) => updateCard("tail", event.target.value)} />
-                    <Field label="Card description" value={draft.card.description} multiline onChange={(event) => updateCard("description", event.target.value)} />
+                    <Field label="后段文字" value={draft.card.tail} onChange={(event) => updateCard("tail", event.target.value)} />
+                    <Field label="信息卡说明" value={draft.card.description} multiline onChange={(event) => updateCard("description", event.target.value)} />
                   </EditorGroup>
 
-                  <EditorGroup title="Section heights">
-                    <RangeField label="Projects" value={draft.sectionSizes.projects} min={180} max={340} onChange={(event) => updateSize("projects", event.target.value)} />
-                    <RangeField label="Blog" value={draft.sectionSizes.blog} onChange={(event) => updateSize("blog", event.target.value)} />
-                    <RangeField label="Resume" value={draft.sectionSizes.resume} onChange={(event) => updateSize("resume", event.target.value)} />
-                    <RangeField label="About" value={draft.sectionSizes.about} onChange={(event) => updateSize("about", event.target.value)} />
+                  <EditorGroup title="板块高度">
+                    <RangeField label="精选项目" value={draft.sectionSizes.projects} min={180} max={340} onChange={(event) => updateSize("projects", event.target.value)} />
+                    <RangeField label="个人优势展示" value={draft.sectionSizes.blog} onChange={(event) => updateSize("blog", event.target.value)} />
+                    <RangeField label="能力列表" value={draft.sectionSizes.resume} onChange={(event) => updateSize("resume", event.target.value)} />
+                    <RangeField label="个人介绍" value={draft.sectionSizes.about} min={70} max={100} onChange={(event) => updateSize("about", event.target.value)} />
                   </EditorGroup>
 
-                  <EditorGroup title="Projects section">
-                    <Field label="Eyebrow" value={draft.projects.eyebrow} onChange={(event) => updateSection("projects", "eyebrow", event.target.value)} />
-                    <Field label="Title" value={draft.projects.title} multiline onChange={(event) => updateSection("projects", "title", event.target.value)} />
-                    <Field label="Description" value={draft.projects.description} multiline onChange={(event) => updateSection("projects", "description", event.target.value)} />
+                  <EditorGroup title="精选项目">
+                    <Field label="小标题" value={draft.projects.eyebrow} onChange={(event) => updateSection("projects", "eyebrow", event.target.value)} />
+                    <Field label="标题" value={draft.projects.title} multiline onChange={(event) => updateSection("projects", "title", event.target.value)} />
+                    <Field label="描述文字" value={draft.projects.description} multiline onChange={(event) => updateSection("projects", "description", event.target.value)} />
                     {draft.projects.items.map((item, index) => (
                       <div key={item.index} className="space-y-4 border-t border-white/10 pt-4">
-                        <p className="text-[10px] font-bold uppercase text-white/35">Project {index + 1}</p>
-                        <Field label="Title" value={item.title} onChange={(event) => updateSectionItem("projects", index, "title", event.target.value)} />
-                        <Field label="Label" value={item.label} onChange={(event) => updateSectionItem("projects", index, "label", event.target.value)} />
-                        <Field label="Description" value={item.description} multiline onChange={(event) => updateSectionItem("projects", index, "description", event.target.value)} />
-                        <Field label="Metric" value={item.metric} onChange={(event) => updateSectionItem("projects", index, "metric", event.target.value)} />
-                        <Field label="Image URL" value={item.asset} onChange={(event) => updateSectionItem("projects", index, "asset", event.target.value)} />
+                        <p className="text-[10px] font-bold uppercase text-white/35">项目 {index + 1}</p>
+                        <Field label="项目标题" value={item.title} onChange={(event) => updateSectionItem("projects", index, "title", event.target.value)} />
+                        <Field label="分类标签" value={item.label} onChange={(event) => updateSectionItem("projects", index, "label", event.target.value)} />
+                        <Field label="项目描述" value={item.description} multiline onChange={(event) => updateSectionItem("projects", index, "description", event.target.value)} />
+                        <Field label="右上角指标" value={item.metric} onChange={(event) => updateSectionItem("projects", index, "metric", event.target.value)} />
+                        <Field label="封面图片链接" value={item.asset} onChange={(event) => updateSectionItem("projects", index, "asset", event.target.value)} />
                         <UploadButton
-                          label="Upload project cover"
+                          label="上传项目封面"
                           disabled={isUploading}
                           onChange={(event) => uploadImage(event, `projects/${index}`, (publicUrl) => updateSectionItem("projects", index, "asset", publicUrl))}
                         />
-                        <RangeField
-                          label="Secondary gallery height"
-                          value={item.galleryHeight}
-                          min={45}
-                          max={92}
-                          onChange={(event) => updateSectionItem("projects", index, "galleryHeight", Number(event.target.value))}
-                        />
-                        <p className="text-[10px] font-bold uppercase text-white/35">Secondary gallery images</p>
+                        <p className="text-[10px] font-bold uppercase text-white/35">二级页轮播图片</p>
                         {item.gallery.map((image, imageIndex) => (
                           <div key={`${index}-${imageIndex}`} className="space-y-2">
                             <div className="grid grid-cols-[1fr_auto] gap-2">
                               <Field
-                                label={`Slide ${imageIndex + 1} URL`}
+                                label={`第 ${imageIndex + 1} 张图片链接`}
                                 value={image}
                                 onChange={(event) => updateGalleryImage("projects", index, imageIndex, event.target.value)}
                               />
                               <button
                                 className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
                                 type="button"
-                                title="Remove slide"
+                                title="删除图片"
                                 onClick={() => removeGalleryImage("projects", index, imageIndex)}
                               >
                                 <Trash2 size={15} />
                               </button>
                             </div>
                             <UploadButton
-                              label={`Upload slide ${imageIndex + 1}`}
+                              label={`上传第 ${imageIndex + 1} 张图片`}
                               disabled={isUploading}
                               onChange={(event) => uploadImage(event, `projects/${index}/gallery`, (publicUrl) => updateGalleryImage("projects", index, imageIndex, publicUrl))}
                             />
@@ -1215,55 +1238,48 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                           type="button"
                           onClick={() => addGalleryImage("projects", index)}
                         >
-                          <Plus size={14} /> Add slide
+                          <Plus size={14} /> 添加图片
                         </button>
                       </div>
                     ))}
                   </EditorGroup>
 
-                  <EditorGroup title="Blog section">
-                    <Field label="Eyebrow" value={draft.blog.eyebrow} onChange={(event) => updateSection("blog", "eyebrow", event.target.value)} />
-                    <Field label="Title" value={draft.blog.title} multiline onChange={(event) => updateSection("blog", "title", event.target.value)} />
-                    <Field label="Description" value={draft.blog.description} multiline onChange={(event) => updateSection("blog", "description", event.target.value)} />
+                  <EditorGroup title="个人优势展示">
+                    <Field label="小标题" value={draft.blog.eyebrow} onChange={(event) => updateSection("blog", "eyebrow", event.target.value)} />
+                    <Field label="标题" value={draft.blog.title} multiline onChange={(event) => updateSection("blog", "title", event.target.value)} />
+                    <Field label="描述文字" value={draft.blog.description} multiline onChange={(event) => updateSection("blog", "description", event.target.value)} />
                     {draft.blog.items.map((item, index) => (
                       <div key={`${item.category}-${index}`} className="space-y-4 border-t border-white/10 pt-4">
-                        <p className="text-[10px] font-bold uppercase text-white/35">Article {index + 1}</p>
-                        <Field label="Category" value={item.category} onChange={(event) => updateSectionItem("blog", index, "category", event.target.value)} />
-                        <Field label="Title" value={item.title} multiline onChange={(event) => updateSectionItem("blog", index, "title", event.target.value)} />
-                        <Field label="Meta" value={item.meta} onChange={(event) => updateSectionItem("blog", index, "meta", event.target.value)} />
-                        <Field label="Image URL" value={item.asset} onChange={(event) => updateSectionItem("blog", index, "asset", event.target.value)} />
+                        <p className="text-[10px] font-bold uppercase text-white/35">优势卡片 {index + 1}</p>
+                        <Field label="分类" value={item.category} onChange={(event) => updateSectionItem("blog", index, "category", event.target.value)} />
+                        <Field label="标题" value={item.title} multiline onChange={(event) => updateSectionItem("blog", index, "title", event.target.value)} />
+                        <Field label="副标签" value={item.meta} onChange={(event) => updateSectionItem("blog", index, "meta", event.target.value)} />
+                        <Field label="封面图片链接" value={item.asset} onChange={(event) => updateSectionItem("blog", index, "asset", event.target.value)} />
                         <UploadButton
-                          label="Upload article cover"
+                          label="上传卡片封面"
                           disabled={isUploading}
                           onChange={(event) => uploadImage(event, `blog/${index}`, (publicUrl) => updateSectionItem("blog", index, "asset", publicUrl))}
                         />
-                        <RangeField
-                          label="Secondary gallery height"
-                          value={item.galleryHeight}
-                          min={45}
-                          max={92}
-                          onChange={(event) => updateSectionItem("blog", index, "galleryHeight", Number(event.target.value))}
-                        />
-                        <p className="text-[10px] font-bold uppercase text-white/35">Secondary gallery images</p>
+                        <p className="text-[10px] font-bold uppercase text-white/35">二级页轮播图片</p>
                         {item.gallery.map((image, imageIndex) => (
                           <div key={`${index}-${imageIndex}`} className="space-y-2">
                             <div className="grid grid-cols-[1fr_auto] gap-2">
                               <Field
-                                label={`Slide ${imageIndex + 1} URL`}
+                                label={`第 ${imageIndex + 1} 张图片链接`}
                                 value={image}
                                 onChange={(event) => updateGalleryImage("blog", index, imageIndex, event.target.value)}
                               />
                               <button
                                 className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
                                 type="button"
-                                title="Remove slide"
+                                title="删除图片"
                                 onClick={() => removeGalleryImage("blog", index, imageIndex)}
                               >
                                 <Trash2 size={15} />
                               </button>
                             </div>
                             <UploadButton
-                              label={`Upload slide ${imageIndex + 1}`}
+                              label={`上传第 ${imageIndex + 1} 张图片`}
                               disabled={isUploading}
                               onChange={(event) => uploadImage(event, `blog/${index}/gallery`, (publicUrl) => updateGalleryImage("blog", index, imageIndex, publicUrl))}
                             />
@@ -1274,54 +1290,47 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                           type="button"
                           onClick={() => addGalleryImage("blog", index)}
                         >
-                          <Plus size={14} /> Add slide
+                          <Plus size={14} /> 添加图片
                         </button>
                       </div>
                     ))}
                   </EditorGroup>
 
-                  <EditorGroup title="Resume section">
-                    <Field label="Eyebrow" value={draft.resume.eyebrow} onChange={(event) => updateSection("resume", "eyebrow", event.target.value)} />
-                    <Field label="Title" value={draft.resume.title} multiline onChange={(event) => updateSection("resume", "title", event.target.value)} />
-                    <Field label="Description" value={draft.resume.description} multiline onChange={(event) => updateSection("resume", "description", event.target.value)} />
+                  <EditorGroup title="能力列表">
+                    <Field label="小标题" value={draft.resume.eyebrow} onChange={(event) => updateSection("resume", "eyebrow", event.target.value)} />
+                    <Field label="标题" value={draft.resume.title} multiline onChange={(event) => updateSection("resume", "title", event.target.value)} />
+                    <Field label="描述文字" value={draft.resume.description} multiline onChange={(event) => updateSection("resume", "description", event.target.value)} />
                     {draft.resume.items.map((item, index) => (
                       <div key={item.step} className="space-y-4 border-t border-white/10 pt-4">
-                        <p className="text-[10px] font-bold uppercase text-white/35">Step {index + 1}</p>
-                        <Field label="Title" value={item.title} onChange={(event) => updateSectionItem("resume", index, "title", event.target.value)} />
-                        <Field label="Description" value={item.description} multiline onChange={(event) => updateSectionItem("resume", index, "description", event.target.value)} />
-                        <Field label="Image URL" value={item.asset} onChange={(event) => updateSectionItem("resume", index, "asset", event.target.value)} />
+                        <p className="text-[10px] font-bold uppercase text-white/35">能力项 {index + 1}</p>
+                        <Field label="标题" value={item.title} onChange={(event) => updateSectionItem("resume", index, "title", event.target.value)} />
+                        <Field label="描述文字" value={item.description} multiline onChange={(event) => updateSectionItem("resume", index, "description", event.target.value)} />
+                        <Field label="封面图片链接" value={item.asset} onChange={(event) => updateSectionItem("resume", index, "asset", event.target.value)} />
                         <UploadButton
-                          label="Upload learning-path cover"
+                          label="上传能力封面"
                           disabled={isUploading}
                           onChange={(event) => uploadImage(event, `resume/${index}`, (publicUrl) => updateSectionItem("resume", index, "asset", publicUrl))}
                         />
-                        <RangeField
-                          label="Secondary gallery height"
-                          value={item.galleryHeight}
-                          min={45}
-                          max={92}
-                          onChange={(event) => updateSectionItem("resume", index, "galleryHeight", Number(event.target.value))}
-                        />
-                        <p className="text-[10px] font-bold uppercase text-white/35">Secondary gallery images</p>
+                        <p className="text-[10px] font-bold uppercase text-white/35">二级页轮播图片</p>
                         {item.gallery.map((image, imageIndex) => (
                           <div key={`${index}-${imageIndex}`} className="space-y-2">
                             <div className="grid grid-cols-[1fr_auto] gap-2">
                               <Field
-                                label={`Slide ${imageIndex + 1} URL`}
+                                label={`第 ${imageIndex + 1} 张图片链接`}
                                 value={image}
                                 onChange={(event) => updateGalleryImage("resume", index, imageIndex, event.target.value)}
                               />
                               <button
                                 className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
                                 type="button"
-                                title="Remove slide"
+                                title="删除图片"
                                 onClick={() => removeGalleryImage("resume", index, imageIndex)}
                               >
                                 <Trash2 size={15} />
                               </button>
                             </div>
                             <UploadButton
-                              label={`Upload slide ${imageIndex + 1}`}
+                              label={`上传第 ${imageIndex + 1} 张图片`}
                               disabled={isUploading}
                               onChange={(event) => uploadImage(event, `resume/${index}/gallery`, (publicUrl) => updateGalleryImage("resume", index, imageIndex, publicUrl))}
                             />
@@ -1332,49 +1341,51 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                           type="button"
                           onClick={() => addGalleryImage("resume", index)}
                         >
-                          <Plus size={14} /> Add slide
+                          <Plus size={14} /> 添加图片
                         </button>
                       </div>
                     ))}
                   </EditorGroup>
 
-                  <EditorGroup title="Personal introduction">
-                    <Field label="Eyebrow" value={draft.about.eyebrow} onChange={(event) => updateSection("about", "eyebrow", event.target.value)} />
-                    <Field label="Title" value={draft.about.title} multiline onChange={(event) => updateSection("about", "title", event.target.value)} />
-                    <Field label="Name" value={draft.about.name} onChange={(event) => updateSection("about", "name", event.target.value)} />
-                    <Field label="Role" value={draft.about.role} onChange={(event) => updateSection("about", "role", event.target.value)} />
-                    <Field label="Biography" value={draft.about.bio} multiline onChange={(event) => updateSection("about", "bio", event.target.value)} />
-                    <Field label="Email" value={draft.about.email} onChange={(event) => updateSection("about", "email", event.target.value)} />
-                    <Field label="Location" value={draft.about.location} onChange={(event) => updateSection("about", "location", event.target.value)} />
-                    <Field label="Portrait / image URL" value={draft.about.image} onChange={(event) => updateSection("about", "image", event.target.value)} />
+                  <EditorGroup title="个人介绍">
+                    <Field label="小标题" value={draft.about.eyebrow} onChange={(event) => updateSection("about", "eyebrow", event.target.value)} />
+                    <Field label="标题" value={draft.about.title} multiline onChange={(event) => updateSection("about", "title", event.target.value)} />
+                    <Field label="姓名" value={draft.about.name} onChange={(event) => updateSection("about", "name", event.target.value)} />
+                    <Field label="身份 / 职位" value={draft.about.role} onChange={(event) => updateSection("about", "role", event.target.value)} />
+                    <Field label="个人简介" value={draft.about.bio} multiline onChange={(event) => updateSection("about", "bio", event.target.value)} />
+                    <Field label="邮箱" value={draft.about.email} onChange={(event) => updateSection("about", "email", event.target.value)} />
+                    <Field label="微信号" value={draft.about.wechat || ""} onChange={(event) => updateSection("about", "wechat", event.target.value)} />
+                    <Field label="地点 / 状态" value={draft.about.location} onChange={(event) => updateSection("about", "location", event.target.value)} />
+                    <div className="h-px bg-white/10" />
+                    <p className="text-[10px] font-bold uppercase text-white/35">个人数据</p>
+                    {draft.about.stats.map((stat, index) => (
+                      <div key={index} className="grid grid-cols-[0.7fr_1.3fr] gap-3">
+                        <Field label={`数据 ${index + 1} 数值`} value={stat.value} onChange={(event) => updateAboutStat(index, "value", event.target.value)} />
+                        <Field label={`数据 ${index + 1} 说明`} value={stat.label} onChange={(event) => updateAboutStat(index, "label", event.target.value)} />
+                      </div>
+                    ))}
+                    <Field label="人物图片链接" value={draft.about.image} onChange={(event) => updateSection("about", "image", event.target.value)} />
                     <UploadButton
-                      label="Upload portrait"
+                      label="上传人物图片"
                       disabled={isUploading}
                       onChange={(event) => uploadImage(event, "about", (publicUrl) => updateSection("about", "image", publicUrl))}
                     />
-                    <RangeField
-                      label="Secondary gallery height"
-                      value={draft.about.galleryHeight}
-                      min={45}
-                      max={92}
-                      onChange={(event) => updateSection("about", "galleryHeight", Number(event.target.value))}
-                    />
-                    <p className="text-[10px] font-bold uppercase text-white/35">Secondary gallery images</p>
+                    <p className="text-[10px] font-bold uppercase text-white/35">二级页轮播图片</p>
                     {draft.about.gallery.map((image, imageIndex) => (
                       <div key={imageIndex} className="space-y-2">
                         <div className="grid grid-cols-[1fr_auto] gap-2">
-                          <Field label={`Slide ${imageIndex + 1} URL`} value={image} onChange={(event) => updateAboutGallery(imageIndex, event.target.value)} />
+                          <Field label={`第 ${imageIndex + 1} 张图片链接`} value={image} onChange={(event) => updateAboutGallery(imageIndex, event.target.value)} />
                           <button
                             className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
                             type="button"
-                            title="Remove slide"
+                            title="删除图片"
                             onClick={() => removeAboutGalleryImage(imageIndex)}
                           >
                             <Trash2 size={15} />
                           </button>
                         </div>
                         <UploadButton
-                          label={`Upload slide ${imageIndex + 1}`}
+                          label={`上传第 ${imageIndex + 1} 张图片`}
                           disabled={isUploading}
                           onChange={(event) => uploadImage(event, "about/gallery", (publicUrl) => updateAboutGallery(imageIndex, publicUrl))}
                         />
@@ -1385,7 +1396,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                       type="button"
                       onClick={addAboutGalleryImage}
                     >
-                      <Plus size={14} /> Add slide
+                      <Plus size={14} /> 添加图片
                     </button>
                   </EditorGroup>
 
@@ -1400,12 +1411,12 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                   <button
                     className="grid size-11 place-items-center border border-white/15 text-white/65 hover:text-white"
                     type="button"
-                    title="Reset content"
+                    title="恢复默认内容"
                     disabled={isSaving || isUploading}
                     onClick={async () => {
                       const resetValue = await onReset();
                       setDraft(resetValue);
-                      setNotice("Default content restored.");
+                      setNotice("已恢复默认内容。");
                     }}
                   >
                     <RotateCcw size={16} />
@@ -1416,7 +1427,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                     disabled={isSaving || isUploading}
                     onClick={save}
                   >
-                    <Save size={16} /> {isSaving ? "Saving..." : isUploading ? "Uploading..." : "Save changes"}
+                    <Save size={16} /> {isSaving ? "保存中..." : isUploading ? "上传中..." : "保存修改"}
                   </button>
                   <button
                     className="col-span-2 flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/15 text-xs font-bold uppercase text-white/70 hover:border-[#f5ea28] hover:text-[#f5ea28]"
@@ -1424,7 +1435,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                     onClick={copyLink}
                   >
                     {copied ? <Check size={16} /> : <Copy size={16} />}
-                    {copied ? "Link copied" : "Copy shareable text link"}
+                    {copied ? "链接已复制" : "复制内容分享链接"}
                   </button>
                 </footer>
               </>
@@ -1437,7 +1448,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
 }
 
 function App() {
-  const detailId = new URLSearchParams(window.location.search).get("detail");
+  const [detailId, setDetailId] = useState(() => new URLSearchParams(window.location.search).get("detail"));
   const pageRef = useRef(null);
   const playOpeningRef = useRef(shouldPlayOpening());
   const sceneTransitionTimerRef = useRef(null);
@@ -1449,6 +1460,24 @@ function App() {
   const [cloudStatus, setCloudStatus] = useState("connecting");
   const [isContentReady, setIsContentReady] = useState(false);
   const openEditor = () => window.dispatchEvent(new Event("codenest:open-editor"));
+
+  const handleRouteNavigation = useCallback(({ href, historyMode = "push" }) => {
+    const destination = new URL(href, window.location.href);
+    const nextDetailId = destination.searchParams.get("detail");
+
+    if (historyMode === "push") {
+      window.history.pushState(null, "", `${destination.pathname}${destination.search}${destination.hash}`);
+    }
+
+    setDetailId(nextDetailId);
+    if (nextDetailId) window.scrollTo({ top: 0, behavior: "auto" });
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => requestPageTransition(window.location.href, "pop");
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const changeHeroScene = useCallback((nextScene) => {
     if (nextScene === activeHeroScene || isSceneTransitioning) return;
@@ -1580,7 +1609,7 @@ function App() {
   };
 
   const handleUpload = async (dataUrl, area) => {
-    if (!session) throw new Error("Your admin session has expired. Sign in again before uploading.");
+    if (!session) throw new Error("管理员登录已过期，请重新登录后上传。");
     try {
       const publicUrl = await uploadPortfolioImage(dataUrl, area);
       setCloudStatus("online");
@@ -1614,18 +1643,18 @@ function App() {
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
 
     try {
-      if (!session) throw new Error("Your admin session has expired. Sign in again before publishing.");
+      if (!session) throw new Error("管理员登录已过期，请重新登录后发布。");
       await saveRemoteContent(stripLocalImages(merged));
       setCloudStatus("online");
       return containsLocalImage(merged)
-        ? "Published to Supabase. Local-only images were excluded; upload them again to make them public."
-        : "Published to Supabase. All visitors will now load this version.";
+        ? "已发布到 Supabase。本地图片未被发布，请重新上传这些图片后再保存。"
+        : "已发布到 Supabase，所有访问者都将看到当前版本。";
     } catch (remoteError) {
       setCloudStatus("offline");
       if (fullContentSaved || backupSaved) {
-        return `Saved in this browser, but cloud publishing failed: ${remoteError.message || "check the Supabase setup and try again."}`;
+        return "已保存在当前浏览器中，但云端发布失败，请检查 Supabase 设置后重试。";
       }
-      return "Preview updated, but neither Supabase nor browser storage accepted the changes.";
+      return "预览已更新，但 Supabase 和浏览器存储都未能保存修改。";
     }
 
   };
@@ -1641,6 +1670,7 @@ function App() {
   if (detailId) {
     return (
       <>
+        <NavigationTransition onNavigate={handleRouteNavigation} />
         <TargetCursor />
         <DetailPage detailId={detailId} content={content} onEdit={openEditor} />
         <ContentEditor
@@ -1659,6 +1689,7 @@ function App() {
 
   return (
     <>
+      <NavigationTransition onNavigate={handleRouteNavigation} />
       <TargetCursor />
       <PortfolioSidebar navigation={content.navigation} />
       <main ref={pageRef} className="min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]">
@@ -1743,7 +1774,7 @@ function App() {
         </div>
       </section>
 
-      <ExperienceSection content={content.about} projectCount={content.projects.items.length} size={content.sectionSizes.about} />
+      <ExperienceSection content={content.about} size={content.sectionSizes.about} />
       <ProjectsSection content={content.projects} size={content.sectionSizes.projects} />
       <StrengthsSection content={content.blog} capabilities={content.resume} size={Math.max(content.sectionSizes.blog, content.sectionSizes.resume)} />
       <ContactSection content={content.about} />

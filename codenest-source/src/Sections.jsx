@@ -1,10 +1,12 @@
-import { ArrowRight, ArrowUpRight, Mail, MapPin } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Mail, MapPin, MessageCircle } from "lucide-react";
 import { rememberHomeScrollPosition } from "./scrollPosition";
 import { resetSpecularEdge, steerSpecularEdge } from "./specularEdge";
 
 function detailHref(id) {
+  const params = new URLSearchParams(window.location.search);
+  params.set("detail", id);
   const contentHash = window.location.hash.startsWith("#content=") ? window.location.hash : "";
-  return `?detail=${id}${contentHash}`;
+  return `${window.location.pathname}?${params.toString()}${contentHash}`;
 }
 
 function SectionLabel({ index, children }) {
@@ -17,20 +19,13 @@ function SectionLabel({ index, children }) {
   );
 }
 
-export function ExperienceSection({ content, projectCount, size }) {
-  const stats = [
-    ["05+", "Years in design"],
-    [String(projectCount).padStart(2, "0"), "Selected cases"],
-    ["04", "Industry contexts"],
-    ["02", "Cross-cultural markets"],
-  ];
-
+export function ExperienceSection({ content, size }) {
   return (
     <section
       id="about"
       data-motion-section
-      className="bg-[#08090b] px-5 py-[clamp(52px,7dvh,72px)] text-[#e8e6d8] sm:px-8 sm:py-32 lg:px-12 lg:py-40"
-      style={{ minHeight: `${Math.max(100, size)}vh` }}
+      className="bg-[#08090b] px-5 py-[clamp(48px,6dvh,64px)] text-[#e8e6d8] sm:px-8 sm:pb-16 sm:pt-20 lg:px-12 lg:pb-16 lg:pt-24"
+      style={{ minHeight: `${Math.max(70, Number(size) || 80)}vh` }}
     >
       <div className="portfolio-layout mx-auto max-w-[1700px]">
         <div data-motion-header className="border-t border-white/16 pt-7">
@@ -39,10 +34,10 @@ export function ExperienceSection({ content, projectCount, size }) {
           </div>
         </div>
 
-        <div className="mt-12 grid gap-12 lg:grid-cols-[0.82fr_1.18fr] lg:gap-20 xl:gap-28">
+        <div className="mt-10 grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:gap-16 xl:gap-20">
           <a
             data-motion-intro
-            className="cursor-target specular-frame group relative block h-[clamp(440px,62dvh,500px)] min-h-0 overflow-hidden rounded-[6px] bg-[#111317] sm:h-auto sm:min-h-[620px] lg:min-h-[760px]"
+            className="cursor-target specular-frame group relative block h-[clamp(400px,56dvh,480px)] min-h-0 overflow-hidden rounded-[6px] bg-[#111317] sm:h-auto sm:min-h-[540px] lg:min-h-[640px]"
             href={detailHref("about")}
             aria-label="Open personal experience gallery"
             onClick={rememberHomeScrollPosition}
@@ -80,27 +75,32 @@ export function ExperienceSection({ content, projectCount, size }) {
 
             <div
               data-motion-copy
-              className="specular-frame specular-frame--quiet mt-14 grid grid-cols-2 overflow-hidden rounded-[6px] border border-white/14 sm:grid-cols-4 lg:mt-20"
+              className="specular-frame specular-frame--quiet mt-12 grid grid-cols-2 overflow-hidden rounded-[6px] border border-white/14 sm:grid-cols-4 lg:mt-14"
               onPointerMove={steerSpecularEdge}
               onPointerLeave={resetSpecularEdge}
             >
-              {stats.map(([value, label], index) => (
+              {content.stats.map((stat, index) => (
                 <div
-                  key={label}
-                  className={`min-h-[126px] border-white/14 p-5 sm:min-h-0 sm:px-5 lg:py-9 ${index % 2 ? "border-l" : ""} ${
+                  key={`${stat.label}-${index}`}
+                  className={`min-h-[112px] border-white/14 p-5 sm:min-h-0 sm:px-5 lg:py-7 ${index % 2 ? "border-l" : ""} ${
                     index >= 2 ? "border-t sm:border-t-0" : ""
                   } ${index > 0 ? "sm:border-l" : "sm:border-l-0"}`}
                 >
-                  <strong className="display-editorial text-[40px] font-medium leading-none text-[#f1efe4] sm:text-5xl">{value}</strong>
-                  <span className="mt-4 block max-w-[12ch] text-[9px] font-bold uppercase leading-4 text-[#d0cec2]/46">{label}</span>
+                  <strong className="display-editorial block whitespace-nowrap text-[38px] font-medium leading-none text-[#f1efe4] sm:text-[40px] xl:text-5xl">{stat.value}</strong>
+                  <span className="mt-4 block max-w-[14ch] text-[9px] font-bold uppercase leading-4 text-[#d0cec2]/46">{stat.label}</span>
                 </div>
               ))}
             </div>
 
-            <div data-motion-copy className="mt-9 grid min-w-0 gap-4 sm:mt-10 sm:flex sm:flex-row sm:items-center sm:gap-8">
+            <div data-motion-copy className="mt-8 flex min-w-0 flex-wrap items-center gap-x-8 gap-y-4">
               <a className="cursor-target inline-flex min-w-0 items-center gap-3 break-all text-[13px] font-semibold text-[#f1efe4] hover:text-[#e5ff48] sm:text-sm" href={`mailto:${content.email}`}>
                 <Mail className="shrink-0" size={16} /> {content.email}
               </a>
+              {content.wechat && (
+                <p className="inline-flex min-w-0 items-center gap-3 text-[13px] text-[#d0cec2]/64 sm:text-sm">
+                  <MessageCircle className="shrink-0" size={16} /> <span className="min-w-0 break-all">{content.wechat}</span>
+                </p>
+              )}
               <p className="inline-flex min-w-0 items-start gap-3 text-[13px] leading-6 text-[#d0cec2]/52 sm:items-center sm:text-sm">
                 <MapPin className="mt-1 shrink-0 sm:mt-0" size={16} /> <span className="min-w-0 break-words">{content.location}</span>
               </p>
@@ -117,7 +117,7 @@ export function ProjectsSection({ content, size }) {
     <section
       id="projects"
       data-motion-section
-      className="bg-[#0d0f12] px-5 py-[clamp(52px,7dvh,72px)] text-[#eeeade] sm:px-8 sm:py-28 lg:px-12 lg:py-32"
+      className="bg-[#0d0f12] px-5 py-[clamp(52px,7dvh,72px)] text-[#eeeade] sm:px-8 sm:pb-28 sm:pt-20 lg:px-12 lg:pb-32 lg:pt-20"
       style={{ minHeight: `${Math.max(180, size)}vh` }}
     >
       <div className="portfolio-layout mx-auto max-w-[1700px]">
@@ -285,8 +285,8 @@ export function ContactSection({ content }) {
         </div>
         <div className="mt-16 lg:mt-24">
           <p data-motion-copy className="text-sm font-semibold uppercase text-[#e5ff48]">Available for brand and visual collaborations</p>
-          <div data-motion-heading-wrap className="motion-heading-mask mt-6">
-            <h2 data-motion-heading className="display-editorial max-w-[13ch] text-[58px] leading-[0.88] sm:text-[92px] lg:text-[132px] xl:text-[164px]">
+          <div data-motion-heading-wrap className="motion-heading-mask motion-heading-mask--descender mt-6">
+            <h2 data-motion-heading className="display-editorial max-w-[13ch] pb-[0.18em] text-[58px] leading-[0.94] sm:text-[92px] lg:text-[132px] xl:text-[164px]">
               Let&apos;s make the brand impossible to ignore.
             </h2>
           </div>
@@ -295,9 +295,10 @@ export function ContactSection({ content }) {
         <div data-motion-copy className="mt-14 grid gap-8 border-t border-white/16 pt-8 lg:mt-20 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
             <p className="max-w-2xl text-sm leading-7 text-[#cfcdc1]/52 sm:text-base">{content.bio}</p>
-            <div className="mt-8 flex flex-col gap-3 text-sm sm:flex-row sm:gap-8">
+            <div className="mt-8 flex flex-col gap-3 text-sm sm:flex-row sm:flex-wrap sm:gap-8">
               <p>{content.location}</p>
               <p>{content.role}</p>
+              {content.wechat && <p>WeChat · {content.wechat}</p>}
             </div>
           </div>
           <a

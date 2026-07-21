@@ -2,6 +2,7 @@ export const DEFAULT_CONTENT = {
   brand: "Anthony Studio",
   logoImage: "",
   navigation: {
+    home: "首页",
     projects: "精选项目",
     blog: "联系",
     about: "关于我",
@@ -26,7 +27,7 @@ export const DEFAULT_CONTENT = {
     projects: 230,
     blog: 120,
     resume: 140,
-    about: 120,
+    about: 80,
   },
   projects: {
     eyebrow: "Selected Work / 01-03",
@@ -210,7 +211,14 @@ export const DEFAULT_CONTENT = {
     role: "Visual Designer · AI Designer · Brand Designer",
     bio:
       "五年品牌全链路视觉设计经验，专注美妆护肤、运动零售与新消费赛道。曾参与外资零售、国企医美、日本设计工作室与上市医美品牌项目，擅长从品牌升级、0-1 体系搭建到全渠道商业落地。",
+    stats: [
+      { value: "05+", label: "Years in design" },
+      { value: "03", label: "Selected cases" },
+      { value: "04", label: "Industry contexts" },
+      { value: "02", label: "Cross-cultural markets" },
+    ],
     email: "342140859@qq.com",
+    wechat: "",
     location: "Shanghai · Open for selected collaborations",
     image: "./portfolio/portrait.webp",
     galleryHeight: 76,

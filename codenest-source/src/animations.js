@@ -6,6 +6,17 @@ gsap.registerPlugin(ScrollTrigger);
 const OPENING_STORAGE_KEY = "anthony-portfolio-opening-v3";
 const PREMIUM_EASE = "expo.out";
 
+function clearStaleScrollTriggers() {
+  ScrollTrigger.getAll().forEach((trigger) => {
+    try {
+      trigger.kill(true);
+    } catch {
+      trigger.kill();
+    }
+  });
+  ScrollTrigger.clearScrollMemory?.();
+}
+
 export function shouldPlayOpening() {
   try {
     return sessionStorage.getItem(OPENING_STORAGE_KEY) !== "seen";
@@ -285,6 +296,7 @@ function createSectionMotion(root, isMobile) {
 export function setupHomeAnimations(root, { playOpening }) {
   if (!root) return () => undefined;
 
+  clearStaleScrollTriggers();
   root.dataset.motionReady = "true";
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (reduceMotion) {
@@ -296,13 +308,28 @@ export function setupHomeAnimations(root, { playOpening }) {
 
   let active = true;
   let disposeOpening;
-  const context = gsap.context(() => {
-    disposeOpening = createHeroOpening(root, playOpening);
-    createSectionMotion(root, window.matchMedia("(max-width: 767px)").matches);
-  }, root);
+  let context;
+  try {
+    context = gsap.context(() => {
+      disposeOpening = createHeroOpening(root, playOpening);
+      createSectionMotion(root, window.matchMedia("(max-width: 767px)").matches);
+    }, root);
+  } catch {
+    clearStaleScrollTriggers();
+    setMotionComplete(root);
+    return () => {
+      delete root.dataset.motionReady;
+    };
+  }
 
   const refresh = () => {
-    if (active) ScrollTrigger.refresh();
+    if (!active) return;
+    try {
+      ScrollTrigger.refresh();
+    } catch {
+      clearStaleScrollTriggers();
+      setMotionComplete(root);
+    }
   };
   document.fonts?.ready.then(refresh).catch(() => undefined);
   root.querySelectorAll("img").forEach((image) => {
@@ -314,6 +341,7 @@ export function setupHomeAnimations(root, { playOpening }) {
     active = false;
     disposeOpening?.();
     context.revert();
+    clearStaleScrollTriggers();
     delete root.dataset.motionReady;
   };
 }

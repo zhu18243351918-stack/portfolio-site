@@ -1,3 +1,5 @@
+import { isPlainNavigationClick, requestPageTransition } from "./pageTransition";
+
 const HOME_SCROLL_POSITION_KEY = "codenest-home-scroll-position";
 
 export function storeHomeScrollPosition() {
@@ -9,18 +11,11 @@ export function storeHomeScrollPosition() {
 }
 
 export function rememberHomeScrollPosition(event) {
-  if (
-    event?.defaultPrevented ||
-    event?.button !== 0 ||
-    event?.metaKey ||
-    event?.ctrlKey ||
-    event?.shiftKey ||
-    event?.altKey
-  ) {
-    return;
-  }
+  if (!isPlainNavigationClick(event)) return;
 
+  event.preventDefault();
   storeHomeScrollPosition();
+  requestPageTransition(event.currentTarget.href);
 }
 
 export function consumeHomeScrollPosition() {

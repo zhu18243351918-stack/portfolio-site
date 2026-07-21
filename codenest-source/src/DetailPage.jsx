@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Pause, Play, Settings } from "lucide-react";
+import { handleTransitionLink } from "./pageTransition";
 import { resetSpecularEdge, steerSpecularEdge } from "./specularEdge";
 
 function resolveDetail(detailId, content) {
@@ -14,7 +15,6 @@ function resolveDetail(detailId, content) {
       description: item.description,
       meta: `${item.label} / ${item.metric}`,
       gallery: item.gallery?.length ? item.gallery : [item.asset],
-      galleryHeight: item.galleryHeight || 76,
     };
   }
 
@@ -29,7 +29,6 @@ function resolveDetail(detailId, content) {
       description: content.blog.description,
       meta: `${item.category} / ${item.meta}`,
       gallery: item.gallery?.length ? item.gallery : [item.asset],
-      galleryHeight: item.galleryHeight || 70,
     };
   }
 
@@ -44,7 +43,6 @@ function resolveDetail(detailId, content) {
       description: item.description,
       meta: `${content.resume.eyebrow} / ${item.step}`,
       gallery: item.gallery?.length ? item.gallery : [item.asset],
-      galleryHeight: item.galleryHeight || 70,
     };
   }
 
@@ -56,7 +54,6 @@ function resolveDetail(detailId, content) {
       description: content.about.bio,
       meta: `${content.about.name} / ${content.about.role}`,
       gallery: content.about.gallery?.length ? content.about.gallery : [content.about.image],
-      galleryHeight: content.about.galleryHeight || 76,
     };
   }
 
@@ -83,7 +80,10 @@ export default function DetailPage({ detailId, content, onEdit }) {
   const [isPaused, setIsPaused] = useState(false);
 
   const galleryLength = detail?.gallery.length || 0;
-  const homeHref = `${window.location.pathname}${window.location.hash.startsWith("#content=") ? window.location.hash : ""}`;
+  const homeParams = new URLSearchParams(window.location.search);
+  homeParams.delete("detail");
+  const homeQuery = homeParams.toString();
+  const homeHref = `${window.location.pathname}${homeQuery ? `?${homeQuery}` : ""}${window.location.hash.startsWith("#content=") ? window.location.hash : ""}`;
 
   const goTo = (index) => {
     if (!trackRef.current || !galleryLength) return;
@@ -122,7 +122,7 @@ export default function DetailPage({ detailId, content, onEdit }) {
         <div className="w-full max-w-3xl border border-white/14 bg-[#0d0f12] p-8 sm:p-12">
           <p className="text-[10px] font-bold uppercase text-[#e5ff48]">Gallery unavailable</p>
           <h1 className="display-editorial mt-5 text-4xl leading-[0.94] sm:text-6xl">This secondary page does not exist.</h1>
-          <a className="cursor-target mt-9 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#e5ff48] px-6 text-sm font-bold text-[#090a0c]" href={homeHref}>
+          <a className="cursor-target mt-9 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#e5ff48] px-6 text-sm font-bold text-[#090a0c]" href={homeHref} onClick={handleTransitionLink}>
             <ArrowLeft size={17} /> Return to portfolio
           </a>
         </div>
@@ -141,14 +141,14 @@ export default function DetailPage({ detailId, content, onEdit }) {
 
       <header className="fixed inset-x-0 top-0 z-40 border-b border-white/12 bg-[#08090b]/70 backdrop-blur-xl">
         <div className="mx-auto flex h-[84px] max-w-[1700px] items-center justify-between px-5 sm:px-8 lg:px-12">
-          <a className="cursor-target" href={homeHref} aria-label="Return to portfolio">
+          <a className="cursor-target" href={homeHref} aria-label="Return to portfolio" onClick={handleTransitionLink}>
             <DetailLogo brand={content.brand} logoImage={content.logoImage} />
           </a>
           <div className="flex items-center gap-2">
             <button className="cursor-target grid size-11 place-items-center rounded-full border border-white/18 bg-white/6 text-white md:hidden" type="button" aria-label="Edit page content" onClick={onEdit}>
               <Settings size={17} />
             </button>
-            <a className="cursor-target inline-flex min-h-11 items-center gap-2 rounded-full border border-white/18 bg-white/6 px-5 text-[10px] font-bold uppercase text-white hover:border-[#e5ff48] hover:text-[#e5ff48]" href={homeHref}>
+            <a className="cursor-target inline-flex min-h-11 items-center gap-2 rounded-full border border-white/18 bg-white/6 px-5 text-[10px] font-bold uppercase text-white hover:border-[#e5ff48] hover:text-[#e5ff48]" href={homeHref} onClick={handleTransitionLink}>
               <ArrowLeft size={15} /> Back
             </a>
           </div>
@@ -158,8 +158,7 @@ export default function DetailPage({ detailId, content, onEdit }) {
       <section className="relative z-10 px-0 pb-12 pt-[84px] sm:px-8 sm:pb-16 lg:px-12 lg:pb-24 lg:pt-28">
         <div className="mx-auto max-w-[1700px]">
           <div
-            className="specular-frame relative overflow-hidden border-y border-white/14 bg-[#0d0f12] sm:rounded-[6px] sm:border"
-            style={{ height: `${detail.galleryHeight}vh`, minHeight: "460px", maxHeight: "980px" }}
+            className="specular-frame relative aspect-video overflow-hidden border-y border-white/14 bg-[#0d0f12] sm:rounded-[6px] sm:border"
             onPointerMove={steerSpecularEdge}
             onPointerLeave={resetSpecularEdge}
           >
