@@ -1225,9 +1225,16 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                         </div>
                         <Field label="公司名称" value={item.company} onChange={(event) => updateSectionItem("career", index, "company", event.target.value)} />
                         <Field label="公司性质 / 职位" value={item.meta} onChange={(event) => updateSectionItem("career", index, "meta", event.target.value)} />
+                        <Field label="公司 Logo 图片链接" value={item.logo || ""} onChange={(event) => updateSectionItem("career", index, "logo", event.target.value)} />
+                        <UploadButton
+                          label="上传公司 Logo"
+                          disabled={isUploading}
+                          onChange={(event) => uploadImage(event, `career/${index}/logo`, (publicUrl) => updateSectionItem("career", index, "logo", publicUrl))}
+                        />
                         <Field label="工作内容" value={item.responsibilities} multiline onChange={(event) => updateSectionItem("career", index, "responsibilities", event.target.value)} />
                         <Field label="重点项目名称" value={item.projectTitle} onChange={(event) => updateSectionItem("career", index, "projectTitle", event.target.value)} />
                         <Field label="重点项目介绍" value={item.projectDescription} multiline onChange={(event) => updateSectionItem("career", index, "projectDescription", event.target.value)} />
+                        <Field label="悬停展开的更多信息" value={item.moreDetails || ""} multiline onChange={(event) => updateSectionItem("career", index, "moreDetails", event.target.value)} />
                       </div>
                     ))}
                   </EditorGroup>

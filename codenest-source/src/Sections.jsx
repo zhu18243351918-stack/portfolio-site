@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight, Mail, MapPin, MessageCircle } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Mail, MapPin, MessageCircle, Plus } from "lucide-react";
 import { rememberHomeScrollPosition } from "./scrollPosition";
 import { resetSpecularEdge, steerSpecularEdge } from "./specularEdge";
 
@@ -153,11 +153,22 @@ export function CareerSection({ content, size }) {
               data-motion-card
               className="career-row group grid gap-7 border-t border-white/14 py-9 sm:py-10 lg:grid-cols-[0.3fr_0.82fr_1.12fr_1fr] lg:gap-8 lg:py-10 xl:grid-cols-[0.28fr_0.9fr_1.15fr_1.05fr] xl:gap-12"
             >
-              <div className="flex items-start justify-between gap-6 lg:block">
-                <span className="font-mono text-[10px] font-bold text-[#e5ff48]">{item.index}</span>
-                <p className="font-mono text-[11px] font-semibold uppercase leading-5 text-[#d8d3b8]/58 lg:mt-8 lg:max-w-[15ch]">
-                  {item.period}
-                </p>
+              <div className="flex items-start justify-between gap-6 lg:flex-col lg:justify-start">
+                <div>
+                  <span className="font-mono text-[10px] font-bold text-[#e5ff48]">{item.index}</span>
+                  <p className="mt-5 font-mono text-[11px] font-semibold uppercase leading-5 text-[#d8d3b8]/58 lg:max-w-[15ch]">
+                    {item.period}
+                  </p>
+                </div>
+                {item.logo ? (
+                  <div className="career-logo-frame mt-0 grid h-[58px] w-[116px] shrink-0 place-items-center overflow-hidden rounded-[4px] border border-white/12 bg-[#f4f4f0] p-1.5 lg:mt-7">
+                    <img className="h-full w-full object-contain" src={item.logo} alt={`${item.company} logo`} />
+                  </div>
+                ) : (
+                  <div className="career-logo-frame mt-0 grid h-[58px] w-[116px] shrink-0 place-items-center rounded-[4px] border border-white/14 bg-white/[0.035] px-3 text-center font-mono text-[9px] font-bold uppercase text-white/40 lg:mt-7">
+                    {item.company.slice(0, 8)}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -168,19 +179,39 @@ export function CareerSection({ content, size }) {
                 <p className="mt-4 max-w-[30ch] text-xs font-semibold leading-6 text-[#e5ff48]/78">{item.meta}</p>
               </div>
 
-              <div>
-                <p className="text-[10px] font-bold uppercase text-white/34">Responsibilities</p>
-                <p className="mt-4 max-w-[52ch] text-sm leading-7 text-[#cfcdc1]/62 sm:text-[15px] sm:leading-8">
-                  {item.responsibilities}
-                </p>
-              </div>
+              <div className="career-detail-zone lg:col-span-2">
+                <div className="grid gap-7 lg:grid-cols-[1.08fr_1fr] lg:gap-8 xl:gap-12">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-white/34">Responsibilities</p>
+                    <p className="mt-4 max-w-[52ch] text-sm leading-7 text-[#cfcdc1]/62 sm:text-[15px] sm:leading-8">
+                      {item.responsibilities}
+                    </p>
+                  </div>
 
-              <div className="border-t border-white/12 pt-7 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 xl:pl-10">
-                <p className="text-[10px] font-bold uppercase text-[#e5ff48]">Major Project</p>
-                <h4 className="mt-4 max-w-[24ch] text-lg font-semibold leading-7 text-[#f1efe4] sm:text-xl">
-                  {item.projectTitle}
-                </h4>
-                <p className="mt-4 max-w-[48ch] text-sm leading-7 text-[#cfcdc1]/52">{item.projectDescription}</p>
+                  <div className="border-t border-white/12 pt-7 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 xl:pl-10">
+                    <p className="text-[10px] font-bold uppercase text-[#e5ff48]">Major Project</p>
+                    <h4 className="mt-4 max-w-[24ch] text-lg font-semibold leading-7 text-[#f1efe4] sm:text-xl">
+                      {item.projectTitle}
+                    </h4>
+                    <p className="mt-4 max-w-[48ch] text-sm leading-7 text-[#cfcdc1]/52">{item.projectDescription}</p>
+                  </div>
+                </div>
+
+                {item.moreDetails && (
+                  <details className="career-more-details mt-7 border-t border-white/10 pt-5">
+                    <summary className="cursor-target flex min-h-8 cursor-pointer items-center justify-between gap-4 text-[10px] font-bold uppercase text-white/40 transition-colors hover:text-[#e5ff48]">
+                      <span>More context</span>
+                      <Plus className="career-more-icon" size={15} strokeWidth={1.7} />
+                    </summary>
+                    <div className="career-more-content">
+                      <div className="overflow-hidden">
+                        <p className="max-w-[92ch] pb-2 pt-4 text-sm leading-7 text-[#cfcdc1]/58 sm:text-[15px] sm:leading-8">
+                          {item.moreDetails}
+                        </p>
+                      </div>
+                    </div>
+                  </details>
+                )}
               </div>
             </article>
           ))}
