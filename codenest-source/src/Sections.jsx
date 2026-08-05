@@ -112,6 +112,84 @@ export function ExperienceSection({ content, size }) {
   );
 }
 
+export function CareerSection({ content, size }) {
+  return (
+    <section
+      id="experience"
+      data-motion-section
+      className="bg-[#0a0c0f] px-5 py-[clamp(48px,6dvh,64px)] text-[#eeeade] sm:px-8 sm:py-16 lg:px-12 lg:py-16"
+      style={{ minHeight: `${Math.max(115, Number(size) || 135)}vh` }}
+      aria-labelledby="career-title"
+    >
+      <div className="portfolio-layout mx-auto max-w-[1700px]">
+        <div data-motion-header className="border-t border-white/16 pt-7">
+          <div data-motion-label>
+            <SectionLabel index="02">Work History / Selected Roles</SectionLabel>
+          </div>
+
+          <div className="mt-10 grid gap-8 lg:grid-cols-[1.12fr_0.88fr] lg:items-end lg:gap-16">
+            <div data-motion-heading-wrap className="motion-heading-mask">
+              <h2
+                id="career-title"
+                data-motion-heading
+                className="display-editorial max-w-[16ch] text-[48px] leading-[0.94] text-[#f1efe4] sm:text-6xl lg:text-[72px] xl:text-[82px]"
+              >
+                {content.title}
+              </h2>
+            </div>
+            <div data-motion-copy className="lg:justify-self-end">
+              <p className="text-[10px] font-bold uppercase text-[#e5ff48]">{content.eyebrow}</p>
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-[#cfcdc1]/58 sm:text-base sm:leading-8">
+                {content.description}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 border-b border-white/14">
+          {content.items.map((item) => (
+            <article
+              key={`${item.index}-${item.company}`}
+              data-motion-card
+              className="career-row group grid gap-7 border-t border-white/14 py-9 sm:py-10 lg:grid-cols-[0.3fr_0.82fr_1.12fr_1fr] lg:gap-8 lg:py-10 xl:grid-cols-[0.28fr_0.9fr_1.15fr_1.05fr] xl:gap-12"
+            >
+              <div className="flex items-start justify-between gap-6 lg:block">
+                <span className="font-mono text-[10px] font-bold text-[#e5ff48]">{item.index}</span>
+                <p className="font-mono text-[11px] font-semibold uppercase leading-5 text-[#d8d3b8]/58 lg:mt-8 lg:max-w-[15ch]">
+                  {item.period}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold uppercase text-white/34">Company / Role</p>
+                <h3 className="mt-4 max-w-[19ch] text-[25px] font-semibold leading-[1.18] text-[#f1efe4] transition-colors duration-300 group-hover:text-white sm:text-[30px]">
+                  {item.company}
+                </h3>
+                <p className="mt-4 max-w-[30ch] text-xs font-semibold leading-6 text-[#e5ff48]/78">{item.meta}</p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold uppercase text-white/34">Responsibilities</p>
+                <p className="mt-4 max-w-[52ch] text-sm leading-7 text-[#cfcdc1]/62 sm:text-[15px] sm:leading-8">
+                  {item.responsibilities}
+                </p>
+              </div>
+
+              <div className="border-t border-white/12 pt-7 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 xl:pl-10">
+                <p className="text-[10px] font-bold uppercase text-[#e5ff48]">Major Project</p>
+                <h4 className="mt-4 max-w-[24ch] text-lg font-semibold leading-7 text-[#f1efe4] sm:text-xl">
+                  {item.projectTitle}
+                </h4>
+                <p className="mt-4 max-w-[48ch] text-sm leading-7 text-[#cfcdc1]/52">{item.projectDescription}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function ProjectsSection({ content, size }) {
   return (
     <section
@@ -124,7 +202,7 @@ export function ProjectsSection({ content, size }) {
         <div data-motion-header>
           <div className="border-t border-white/16 pt-7">
             <div data-motion-label>
-              <SectionLabel index="02">Selected Projects</SectionLabel>
+              <SectionLabel index="03">Selected Projects</SectionLabel>
             </div>
           </div>
           <div className="mt-12 grid gap-8 lg:grid-cols-[1.12fr_0.88fr] lg:items-end lg:gap-16">
@@ -188,7 +266,7 @@ export function StrengthsSection({ content, capabilities, size }) {
         <div data-motion-header>
           <div className="border-t border-white/16 pt-7">
             <div data-motion-label>
-              <SectionLabel index="03">Strengths / Capabilities</SectionLabel>
+              <SectionLabel index="04">Strengths / Capabilities</SectionLabel>
             </div>
           </div>
           <div className="mt-12 grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end lg:gap-16">
@@ -280,7 +358,7 @@ export function ContactSection({ content }) {
       <div className="portfolio-layout relative z-10 mx-auto w-full max-w-[1700px]">
         <div data-motion-header className="border-t border-white/16 pt-7">
           <div data-motion-label>
-            <SectionLabel index="04">Contact / Collaboration</SectionLabel>
+            <SectionLabel index="05">Contact / Collaboration</SectionLabel>
           </div>
         </div>
         <div className="mt-16 lg:mt-24">

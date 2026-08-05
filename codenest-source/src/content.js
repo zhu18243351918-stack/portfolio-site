@@ -6,6 +6,7 @@ export const DEFAULT_CONTENT = {
     projects: "精选项目",
     blog: "联系",
     about: "关于我",
+    career: "工作履历",
     resume: "个人优势",
   },
   eyebrow: "Visual / AI / Brand Designer",
@@ -27,7 +28,60 @@ export const DEFAULT_CONTENT = {
     projects: 230,
     blog: 120,
     resume: 140,
-    about: 80,
+    about: 58,
+    career: 135,
+  },
+  career: {
+    eyebrow: "Career / 2020-Now",
+    title: "Selected career experience.",
+    description:
+      "从外资运动零售、国企美妆、日本设计与商务协同，到上市护肤品牌电商增长，持续在真实业务目标中建立视觉系统与商业判断。",
+    items: [
+      {
+        index: "01",
+        period: "2024.09 - NOW",
+        company: "敷尔佳科技股份有限公司",
+        meta: "上市公司 / 平面设计师",
+        responsibilities:
+          "负责上市护肤品牌电商全渠道视觉设计，覆盖线上平台、线下物料与展会视觉；定期评估设计转化数据，持续迭代核心品类视觉表现。",
+        projectTitle: "敷尔佳全渠道电商视觉与核心品类增长",
+        projectDescription:
+          "围绕核心品类主图、商品卡与平台内容建立统一视觉策略，商品卡销售额达到 3.06 亿元、品类排名第 2，销售占比达到 36%。",
+      },
+      {
+        index: "02",
+        period: "2024.01 - 2024.07",
+        company: "株式会社DESSIN inc. / 株式会社朱电气",
+        meta: "日本 / 品牌商业化设计顾问（兼职）· 经理",
+        responsibilities:
+          "为日本设计工作室提供中国市场品牌策略与视觉本土化适配；同期参与公司重大决策筹备、中日商务对接与核心项目统筹。",
+        projectTitle: "中国市场品牌本土化与中日商务协同",
+        projectDescription:
+          "策划并落地多媒介宣传内容，搭建适配中国市场的品牌视觉体系；参与台积电相关商务对接，从企业经营视角理解设计价值。",
+      },
+      {
+        index: "03",
+        period: "2022.02 - 2023.12",
+        company: "福瑞达生物股份有限公司",
+        meta: "国企 / 平面设计师",
+        responsibilities:
+          "负责美妆护肤品牌「瑷尔博士」新零售视觉把控与全渠道设计落地，跟进线上线下活动物料、新媒体视觉与终端内容。",
+        projectTitle: "瑷尔博士新零售全渠道视觉体系",
+        projectDescription:
+          "累计输出全渠道设计物料 150+ 套，优化视觉规范后品牌视觉复用率提升 10%，保障线上平台与线下终端的视觉统一。",
+      },
+      {
+        index: "04",
+        period: "2020.10 - 2022.02",
+        company: "涵博投资（上海）有限公司",
+        meta: "外企 / 品牌设计师",
+        responsibilities:
+          "主导滔搏 APP、小程序全链路视觉设计，输出界面 KV、活动海报等物料 200+ 套，并支持全国零售终端的营销视觉落地。",
+        projectTitle: "滔搏数字平台与全国终端视觉升级",
+        projectDescription:
+          "项目覆盖 8000+ 线下门店与全国 300+ 城市，助力活动页点击率提升 15%；将物料复用率提升 20%，降低跨渠道设计成本。",
+      },
+    ],
   },
   projects: {
     eyebrow: "Selected Work / 01-03",

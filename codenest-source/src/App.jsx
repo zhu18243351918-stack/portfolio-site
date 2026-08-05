@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { CONTENT_STORAGE_KEY, DEFAULT_CONTENT } from "./content";
-import { ContactSection, ExperienceSection, ProjectsSection, StrengthsSection } from "./Sections";
+import { CareerSection, ContactSection, ExperienceSection, ProjectsSection, StrengthsSection } from "./Sections";
 import { setupHomeAnimations, shouldPlayOpening } from "./animations";
 import DetailPage from "./DetailPage";
 import Galaxy from "./Galaxy";
@@ -41,6 +41,7 @@ import {
 const navTargets = [
   { key: "home", href: "#top" },
   { key: "about", href: "#about" },
+  { key: "career", href: "#experience" },
   { key: "projects", href: "#projects" },
   { key: "resume", href: "#strengths" },
   { key: "blog", href: "#contact" },
@@ -140,6 +141,7 @@ function migratedText(value, legacyValues, fallback) {
 
 function mergeContent(value = {}) {
   const incomingAboutSize = Number(value.sectionSizes?.about);
+  const incomingCareerSize = Number(value.sectionSizes?.career);
 
   return {
     ...DEFAULT_CONTENT,
@@ -172,14 +174,24 @@ function mergeContent(value = {}) {
       blog: migratedText(value.navigation?.blog, ["BLOG", "工作内容"], DEFAULT_CONTENT.navigation.blog),
       resume: migratedText(value.navigation?.resume, ["RESUME", "其他"], DEFAULT_CONTENT.navigation.resume),
       about: migratedText(value.navigation?.about, ["ABOUT", "个人资料"], DEFAULT_CONTENT.navigation.about),
+      career: value.navigation?.career?.trim() || DEFAULT_CONTENT.navigation.career,
     },
     sectionSizes: {
       ...DEFAULT_CONTENT.sectionSizes,
       ...(value.sectionSizes || {}),
       about:
-        incomingAboutSize === 120
+        [80, 120].includes(incomingAboutSize)
           ? DEFAULT_CONTENT.sectionSizes.about
-          : Math.min(100, Math.max(70, incomingAboutSize || DEFAULT_CONTENT.sectionSizes.about)),
+          : Math.min(80, Math.max(50, incomingAboutSize || DEFAULT_CONTENT.sectionSizes.about)),
+      career: Math.min(190, Math.max(115, incomingCareerSize || DEFAULT_CONTENT.sectionSizes.career)),
+    },
+    career: {
+      ...DEFAULT_CONTENT.career,
+      ...(value.career || {}),
+      items: DEFAULT_CONTENT.career.items.map((item, index) => ({
+        ...item,
+        ...(Array.isArray(value.career?.items) ? value.career.items[index] : {}),
+      })),
     },
     projects: {
       ...DEFAULT_CONTENT.projects,
@@ -570,6 +582,7 @@ function Logo({ brand, logoImage }) {
 const sidebarTargets = [
   { id: "top", label: "首页" },
   { id: "about", key: "about" },
+  { id: "experience", key: "career" },
   { id: "projects", key: "projects" },
   { id: "strengths", key: "resume" },
   { id: "contact", key: "blog" },
@@ -663,7 +676,7 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
       <header data-hero-nav className="fixed inset-x-0 top-0 z-50 border-b border-white/12 bg-[#07080a]/56 text-[#f1efe4] backdrop-blur-xl">
         <div className="portfolio-layout mx-auto flex h-[84px] max-w-[1700px] items-center justify-between px-5 sm:px-8 lg:px-12">
           <Logo brand={brand} logoImage={logoImage} />
-          <nav className="hidden items-center gap-8 lg:flex" aria-label="Primary navigation">
+          <nav className="hidden items-center gap-5 lg:flex xl:gap-8" aria-label="Primary navigation">
             {items.map((item) => (
               <a
                 key={item.key}
@@ -1099,6 +1112,11 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                       onChange={(event) => updateSection("navigation", "about", event.target.value)}
                     />
                     <Field
+                      label="工作履历菜单文字"
+                      value={draft.navigation.career}
+                      onChange={(event) => updateSection("navigation", "career", event.target.value)}
+                    />
+                    <Field
                       label="精选项目菜单文字"
                       value={draft.navigation.projects}
                       onChange={(event) => updateSection("navigation", "projects", event.target.value)}
@@ -1190,7 +1208,28 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                     <RangeField label="精选项目" value={draft.sectionSizes.projects} min={180} max={340} onChange={(event) => updateSize("projects", event.target.value)} />
                     <RangeField label="个人优势展示" value={draft.sectionSizes.blog} onChange={(event) => updateSize("blog", event.target.value)} />
                     <RangeField label="能力列表" value={draft.sectionSizes.resume} onChange={(event) => updateSize("resume", event.target.value)} />
-                    <RangeField label="个人介绍" value={draft.sectionSizes.about} min={70} max={100} onChange={(event) => updateSize("about", event.target.value)} />
+                    <RangeField label="个人介绍" value={draft.sectionSizes.about} min={50} max={80} onChange={(event) => updateSize("about", event.target.value)} />
+                    <RangeField label="工作履历" value={draft.sectionSizes.career} min={115} max={190} onChange={(event) => updateSize("career", event.target.value)} />
+                  </EditorGroup>
+
+                  <EditorGroup title="工作履历">
+                    <Field label="小标题" value={draft.career.eyebrow} onChange={(event) => updateSection("career", "eyebrow", event.target.value)} />
+                    <Field label="标题" value={draft.career.title} multiline onChange={(event) => updateSection("career", "title", event.target.value)} />
+                    <Field label="描述文字" value={draft.career.description} multiline onChange={(event) => updateSection("career", "description", event.target.value)} />
+                    {draft.career.items.map((item, index) => (
+                      <div key={`${item.index}-${index}`} className="space-y-4 border-t border-white/10 pt-4">
+                        <p className="text-[10px] font-bold uppercase text-white/35">工作履历 {index + 1}</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Field label="序号" value={item.index} onChange={(event) => updateSectionItem("career", index, "index", event.target.value)} />
+                          <Field label="工作时间" value={item.period} onChange={(event) => updateSectionItem("career", index, "period", event.target.value)} />
+                        </div>
+                        <Field label="公司名称" value={item.company} onChange={(event) => updateSectionItem("career", index, "company", event.target.value)} />
+                        <Field label="公司性质 / 职位" value={item.meta} onChange={(event) => updateSectionItem("career", index, "meta", event.target.value)} />
+                        <Field label="工作内容" value={item.responsibilities} multiline onChange={(event) => updateSectionItem("career", index, "responsibilities", event.target.value)} />
+                        <Field label="重点项目名称" value={item.projectTitle} onChange={(event) => updateSectionItem("career", index, "projectTitle", event.target.value)} />
+                        <Field label="重点项目介绍" value={item.projectDescription} multiline onChange={(event) => updateSectionItem("career", index, "projectDescription", event.target.value)} />
+                      </div>
+                    ))}
                   </EditorGroup>
 
                   <EditorGroup title="精选项目">
@@ -1777,6 +1816,7 @@ function App() {
       </section>
 
       <ExperienceSection content={content.about} size={content.sectionSizes.about} />
+      <CareerSection content={content.career} size={content.sectionSizes.career} />
       <ProjectsSection content={content.projects} size={content.sectionSizes.projects} />
       <StrengthsSection content={content.blog} capabilities={content.resume} size={Math.max(content.sectionSizes.blog, content.sectionSizes.resume)} />
       <ContactSection content={content.about} />
