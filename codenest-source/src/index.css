@@ -291,6 +291,129 @@ textarea:focus-visible {
   }
 }
 
+.work-catalog-shell {
+  --catalog-card-width: clamp(196px, 15vw, 252px);
+  --catalog-card-height: clamp(348px, 29vw, 462px);
+  position: relative;
+  overflow: hidden;
+  padding-block: 22px 34px;
+}
+
+.work-catalog-track {
+  display: flex;
+  width: max-content;
+  transform: translate3d(0, 0, 0);
+  animation: work-catalog-marquee 88s linear infinite;
+  will-change: transform;
+}
+
+.work-catalog-shell:hover .work-catalog-track,
+.work-catalog-shell:focus-within .work-catalog-track {
+  animation-play-state: paused;
+}
+
+.work-catalog-group {
+  display: flex;
+  flex: none;
+  gap: clamp(12px, 1.25vw, 22px);
+  padding-right: clamp(12px, 1.25vw, 22px);
+}
+
+.work-catalog-cell {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 var(--catalog-card-width);
+  width: var(--catalog-card-width);
+  height: var(--catalog-card-height);
+}
+
+.work-catalog-card {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 5px;
+  background: #17191c;
+  box-shadow: 0 22px 68px rgb(0 0 0 / 0.26);
+  transform: translateZ(0);
+  transition:
+    width 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 600ms ease,
+    box-shadow 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.work-catalog-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.012);
+  transition:
+    transform 1100ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 700ms ease;
+}
+
+.work-catalog-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(5 7 8 / 0.34) 0%, transparent 35%),
+    linear-gradient(0deg, rgb(5 7 8 / 0.94) 0%, rgb(5 7 8 / 0.2) 52%, transparent 76%);
+  transition: opacity 700ms ease;
+}
+
+.work-catalog-description {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    max-height 700ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 500ms ease 80ms,
+    transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .work-catalog-cell:hover,
+  .work-catalog-cell:focus-within {
+    z-index: 20;
+  }
+
+  .work-catalog-card:hover,
+  .work-catalog-card:focus-visible {
+    width: var(--catalog-card-height);
+    border-color: rgb(229 255 72 / 0.72);
+    box-shadow: 0 34px 110px rgb(0 0 0 / 0.62);
+  }
+
+  .work-catalog-card:hover .work-catalog-image,
+  .work-catalog-card:focus-visible .work-catalog-image {
+    transform: scale(1.025);
+    filter: saturate(1.04) contrast(1.02);
+  }
+
+  .work-catalog-card:hover .work-catalog-shade,
+  .work-catalog-card:focus-visible .work-catalog-shade {
+    opacity: 0.88;
+  }
+
+  .work-catalog-card:hover .work-catalog-description,
+  .work-catalog-card:focus-visible .work-catalog-description {
+    max-height: 120px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes work-catalog-marquee {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
 .specular-frame {
   --specular-angle: 215deg;
   --specular-proximity: 0.58;
@@ -427,6 +550,37 @@ textarea:focus-visible {
     animation: none;
     opacity: 0.62;
   }
+
+  .work-catalog-shell {
+    --catalog-card-width: min(72vw, 270px);
+    --catalog-card-height: min(112vw, 420px);
+    overflow-x: auto;
+    padding: 12px 20px 22px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .work-catalog-shell::-webkit-scrollbar {
+    display: none;
+  }
+
+  .work-catalog-track {
+    animation: none;
+  }
+
+  .work-catalog-group[aria-hidden="true"] {
+    display: none;
+  }
+
+  .work-catalog-cell {
+    scroll-snap-align: start;
+  }
+
+  .work-catalog-description {
+    max-height: 82px;
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -455,5 +609,18 @@ textarea:focus-visible {
 
   .specular-frame::before {
     animation: none !important;
+  }
+
+  .work-catalog-shell {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .work-catalog-track {
+    animation: none !important;
+  }
+
+  .work-catalog-group[aria-hidden="true"] {
+    display: none;
   }
 }

@@ -221,63 +221,75 @@ export function CareerSection({ content, size }) {
   );
 }
 
+function CatalogCard({ item, index, duplicate = false }) {
+  return (
+    <div className="work-catalog-cell" data-motion-card={!duplicate ? "" : undefined}>
+      <a
+        className="cursor-target work-catalog-card group"
+        href={detailHref(`catalog-${index}`)}
+        aria-label={`Open ${item.title} gallery`}
+        aria-hidden={duplicate || undefined}
+        tabIndex={duplicate ? -1 : undefined}
+        onClick={rememberHomeScrollPosition}
+      >
+        <img className="work-catalog-image" src={item.image} alt={duplicate ? "" : item.title} />
+        <div className="work-catalog-shade" aria-hidden="true" />
+        <div className="absolute inset-x-5 top-5 z-10 flex items-center justify-between gap-4 text-[9px] font-bold uppercase text-white/72 sm:inset-x-6 sm:top-6">
+          <span>{item.index} / {item.category}</span>
+          <ArrowUpRight className="transition-transform duration-500 group-hover:rotate-45" size={16} />
+        </div>
+        <div className="absolute inset-x-5 bottom-5 z-10 sm:inset-x-6 sm:bottom-6">
+          <h3 className="display-editorial max-w-[12ch] text-[28px] leading-[0.98] text-white sm:text-[34px]">
+            {item.title}
+          </h3>
+          <p className="work-catalog-description mt-4 max-w-[34ch] text-xs leading-6 text-white/64">
+            {item.description}
+          </p>
+        </div>
+      </a>
+    </div>
+  );
+}
+
 export function ProjectsSection({ content, size }) {
+  const catalogItems = content.catalogItems || [];
+
   return (
     <section
       id="projects"
       data-motion-section
-      className="bg-[#0d0f12] px-5 py-[clamp(52px,7dvh,72px)] text-[#eeeade] sm:px-8 sm:pb-28 sm:pt-20 lg:px-12 lg:pb-32 lg:pt-20"
-      style={{ minHeight: `${Math.max(180, size)}vh` }}
+      className="overflow-hidden bg-[#0d0f12] py-[clamp(52px,7dvh,72px)] text-[#eeeade] sm:py-20 lg:py-24"
+      style={{ minHeight: `${Math.max(85, Number(size) || 85)}vh` }}
     >
-      <div className="portfolio-layout mx-auto max-w-[1700px]">
+      <div className="portfolio-layout mx-auto max-w-[1700px] px-5 sm:px-8 lg:px-12">
         <div data-motion-header>
           <div className="border-t border-white/16 pt-7">
             <div data-motion-label>
-              <SectionLabel index="03">Selected Projects</SectionLabel>
+              <SectionLabel index="03">Work Directory / Selected Work</SectionLabel>
             </div>
           </div>
-          <div className="mt-12 grid gap-8 lg:grid-cols-[1.12fr_0.88fr] lg:items-end lg:gap-16">
+          <div className="mt-10 grid gap-8 lg:grid-cols-[1.12fr_0.88fr] lg:items-end lg:gap-16">
             <div data-motion-heading-wrap className="motion-heading-mask">
-              <h2 data-motion-heading className="display-editorial max-w-[14ch] text-[50px] leading-[0.94] sm:text-7xl lg:text-[82px] xl:text-[94px]">
+              <h2 data-motion-heading className="display-editorial max-w-[14ch] text-[48px] leading-[0.94] sm:text-6xl lg:text-[74px] xl:text-[84px]">
                 {content.title}
               </h2>
             </div>
-            <p data-motion-copy className="max-w-2xl text-sm leading-7 text-[#cfcdc1]/58 sm:text-base sm:leading-8 lg:justify-self-end">{content.description}</p>
+            <div data-motion-copy className="lg:justify-self-end">
+              <p className="text-[10px] font-bold uppercase text-[#e5ff48]">Click a work to explore</p>
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-[#cfcdc1]/58 sm:text-base sm:leading-8">{content.description}</p>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="mt-16 space-y-8 lg:mt-20 lg:space-y-12">
-          {content.items.map((item, index) => (
-            <article
-              key={item.index}
-              data-motion-card
-              className="cursor-target specular-frame project-feature group relative mx-auto min-h-[480px] w-full max-w-[1200px] overflow-hidden rounded-[6px] bg-[#111317] sm:min-h-[600px] lg:h-[min(64dvh,720px)] lg:min-h-[640px]"
-              onPointerMove={steerSpecularEdge}
-              onPointerLeave={resetSpecularEdge}
-            >
-              <a
-                className="absolute inset-0"
-                href={detailHref(`project-${index}`)}
-                aria-label={`Open ${item.title} gallery`}
-                onClick={rememberHomeScrollPosition}
-              >
-                <img className="project-media absolute inset-0 h-full w-full object-cover lg:object-contain" src={item.asset} alt={item.title} />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.04)_18%,rgba(5,6,8,0.16)_54%,rgba(5,6,8,0.96)_100%)]" />
-                <div className="absolute inset-x-6 top-6 flex items-center justify-between text-[10px] font-bold uppercase text-white/68 sm:inset-x-9 sm:top-9">
-                  <span>{item.index} / {item.label}</span>
-                  <span className="hidden sm:block">{item.metric}</span>
-                </div>
-                <div className="absolute inset-x-6 bottom-7 grid gap-7 sm:inset-x-9 sm:bottom-10 lg:grid-cols-[1fr_0.72fr] lg:items-end lg:gap-16">
-                  <h3 className="display-editorial max-w-[18ch] text-[36px] leading-[1.08] text-white sm:text-[48px] lg:text-[54px] xl:text-[62px]">{item.title}</h3>
-                  <div className="flex items-end justify-between gap-5 lg:justify-self-end">
-                    <p className="hidden max-w-lg text-sm leading-7 text-white/62 sm:block">{item.description}</p>
-                    <span className="grid size-14 shrink-0 place-items-center rounded-full bg-[#e5ff48] text-[#090a0c] transition-transform duration-500 group-hover:rotate-45 group-hover:scale-105">
-                      <ArrowUpRight size={20} />
-                    </span>
-                  </div>
-                </div>
-              </a>
-            </article>
+      <div className="work-catalog-shell mt-12 sm:mt-14 lg:mt-16" data-motion-group>
+        <div className="work-catalog-track">
+          {[0, 1].map((groupIndex) => (
+            <div key={groupIndex} className="work-catalog-group" aria-hidden={groupIndex === 1 || undefined}>
+              {catalogItems.map((item, index) => (
+                <CatalogCard key={`${groupIndex}-${item.index}-${item.title}`} item={item} index={index} duplicate={groupIndex === 1} />
+              ))}
+            </div>
           ))}
         </div>
       </div>

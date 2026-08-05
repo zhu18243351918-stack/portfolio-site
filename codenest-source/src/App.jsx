@@ -142,6 +142,7 @@ function migratedText(value, legacyValues, fallback) {
 function mergeContent(value = {}) {
   const incomingAboutSize = Number(value.sectionSizes?.about);
   const incomingCareerSize = Number(value.sectionSizes?.career);
+  const incomingProjectsSize = Number(value.sectionSizes?.projects);
 
   return {
     ...DEFAULT_CONTENT,
@@ -170,7 +171,7 @@ function mergeContent(value = {}) {
       ...DEFAULT_CONTENT.navigation,
       ...(value.navigation || {}),
       home: value.navigation?.home?.trim() || DEFAULT_CONTENT.navigation.home,
-      projects: migratedText(value.navigation?.projects, ["PROJECTS", "工作介绍"], DEFAULT_CONTENT.navigation.projects),
+      projects: migratedText(value.navigation?.projects, ["PROJECTS", "工作介绍", "精选项目"], DEFAULT_CONTENT.navigation.projects),
       blog: migratedText(value.navigation?.blog, ["BLOG", "工作内容"], DEFAULT_CONTENT.navigation.blog),
       resume: migratedText(value.navigation?.resume, ["RESUME", "其他"], DEFAULT_CONTENT.navigation.resume),
       about: migratedText(value.navigation?.about, ["ABOUT", "个人资料"], DEFAULT_CONTENT.navigation.about),
@@ -179,6 +180,10 @@ function mergeContent(value = {}) {
     sectionSizes: {
       ...DEFAULT_CONTENT.sectionSizes,
       ...(value.sectionSizes || {}),
+      projects:
+        incomingProjectsSize === 230
+          ? DEFAULT_CONTENT.sectionSizes.projects
+          : Math.min(160, Math.max(85, incomingProjectsSize || DEFAULT_CONTENT.sectionSizes.projects)),
       about:
         [80, 120].includes(incomingAboutSize)
           ? DEFAULT_CONTENT.sectionSizes.about
@@ -196,17 +201,28 @@ function mergeContent(value = {}) {
     projects: {
       ...DEFAULT_CONTENT.projects,
       ...(value.projects || {}),
-      eyebrow: migratedText(value.projects?.eyebrow, ["Project-Based Learning", "工作介绍"], DEFAULT_CONTENT.projects.eyebrow),
+      eyebrow: migratedText(value.projects?.eyebrow, ["Project-Based Learning", "工作介绍", "Selected Work / 01-03"], DEFAULT_CONTENT.projects.eyebrow),
       title: migratedText(
         value.projects?.title,
-        ["Build work that proves what you can do.", "Selected projects built for real brands.", "Selected work for brands in motion."],
+        ["Build work that proves what you can do.", "Selected projects built for real brands.", "Selected work for brands in motion.", "Selected brand work."],
         DEFAULT_CONTENT.projects.title,
       ),
       description: migratedText(
         value.projects?.description,
-        ["Move from guided fundamentals to portfolio-ready products. Each project mirrors the decisions, constraints, and feedback loops of a real engineering team."],
+        [
+          "Move from guided fundamentals to portfolio-ready products. Each project mirrors the decisions, constraints, and feedback loops of a real engineering team.",
+          "从品牌升级、全渠道视觉规范到电商内容落地，每个项目都围绕真实业务目标建立视觉系统。点击项目可进入完整案例。",
+        ],
         DEFAULT_CONTENT.projects.description,
       ),
+      catalogItems: DEFAULT_CONTENT.projects.catalogItems.map((item, index) => ({
+        ...item,
+        ...(Array.isArray(value.projects?.catalogItems) ? value.projects.catalogItems[index] : {}),
+        gallery:
+          Array.isArray(value.projects?.catalogItems?.[index]?.gallery) && value.projects.catalogItems[index].gallery.length
+            ? value.projects.catalogItems[index].gallery
+            : item.gallery,
+      })),
       items: mergeItems(DEFAULT_CONTENT.projects.items, value.projects?.items, LEGACY_PROJECT_TITLES),
     },
     blog: {
@@ -883,6 +899,55 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
         ),
       },
     }));
+  const updateCatalogItem = (index, key, value) =>
+    setDraft((current) => ({
+      ...current,
+      projects: {
+        ...current.projects,
+        catalogItems: current.projects.catalogItems.map((item, itemIndex) =>
+          itemIndex === index ? { ...item, [key]: value } : item,
+        ),
+      },
+    }));
+  const updateCatalogGalleryImage = (itemIndex, imageIndex, value) =>
+    setDraft((current) => ({
+      ...current,
+      projects: {
+        ...current.projects,
+        catalogItems: current.projects.catalogItems.map((item, index) =>
+          index === itemIndex
+            ? {
+                ...item,
+                gallery: item.gallery.map((image, galleryIndex) =>
+                  galleryIndex === imageIndex ? value : image,
+                ),
+              }
+            : item,
+        ),
+      },
+    }));
+  const addCatalogGalleryImage = (itemIndex) =>
+    setDraft((current) => ({
+      ...current,
+      projects: {
+        ...current.projects,
+        catalogItems: current.projects.catalogItems.map((item, index) =>
+          index === itemIndex ? { ...item, gallery: [...item.gallery, item.image] } : item,
+        ),
+      },
+    }));
+  const removeCatalogGalleryImage = (itemIndex, imageIndex) =>
+    setDraft((current) => ({
+      ...current,
+      projects: {
+        ...current.projects,
+        catalogItems: current.projects.catalogItems.map((item, index) =>
+          index === itemIndex && item.gallery.length > 1
+            ? { ...item, gallery: item.gallery.filter((_, galleryIndex) => galleryIndex !== imageIndex) }
+            : item,
+        ),
+      },
+    }));
   const updateAboutStat = (index, key, value) =>
     setDraft((current) => ({
       ...current,
@@ -1205,7 +1270,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                   </EditorGroup>
 
                   <EditorGroup title="板块高度">
-                    <RangeField label="精选项目" value={draft.sectionSizes.projects} min={180} max={340} onChange={(event) => updateSize("projects", event.target.value)} />
+                    <RangeField label="工作目录" value={draft.sectionSizes.projects} min={85} max={160} onChange={(event) => updateSize("projects", event.target.value)} />
                     <RangeField label="个人优势展示" value={draft.sectionSizes.blog} onChange={(event) => updateSize("blog", event.target.value)} />
                     <RangeField label="能力列表" value={draft.sectionSizes.resume} onChange={(event) => updateSize("resume", event.target.value)} />
                     <RangeField label="个人介绍" value={draft.sectionSizes.about} min={50} max={80} onChange={(event) => updateSize("about", event.target.value)} />
@@ -1239,37 +1304,39 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                     ))}
                   </EditorGroup>
 
-                  <EditorGroup title="精选项目">
+                  <EditorGroup title="工作目录">
                     <Field label="小标题" value={draft.projects.eyebrow} onChange={(event) => updateSection("projects", "eyebrow", event.target.value)} />
                     <Field label="标题" value={draft.projects.title} multiline onChange={(event) => updateSection("projects", "title", event.target.value)} />
                     <Field label="描述文字" value={draft.projects.description} multiline onChange={(event) => updateSection("projects", "description", event.target.value)} />
-                    {draft.projects.items.map((item, index) => (
-                      <div key={item.index} className="space-y-4 border-t border-white/10 pt-4">
-                        <p className="text-[10px] font-bold uppercase text-white/35">项目 {index + 1}</p>
-                        <Field label="项目标题" value={item.title} onChange={(event) => updateSectionItem("projects", index, "title", event.target.value)} />
-                        <Field label="分类标签" value={item.label} onChange={(event) => updateSectionItem("projects", index, "label", event.target.value)} />
-                        <Field label="项目描述" value={item.description} multiline onChange={(event) => updateSectionItem("projects", index, "description", event.target.value)} />
-                        <Field label="右上角指标" value={item.metric} onChange={(event) => updateSectionItem("projects", index, "metric", event.target.value)} />
-                        <Field label="封面图片链接" value={item.asset} onChange={(event) => updateSectionItem("projects", index, "asset", event.target.value)} />
+                    {draft.projects.catalogItems.map((item, index) => (
+                      <div key={`${item.index}-${index}`} className="space-y-4 border-t border-white/10 pt-4">
+                        <p className="text-[10px] font-bold uppercase text-white/35">目录卡片 {index + 1}</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Field label="序号" value={item.index} onChange={(event) => updateCatalogItem(index, "index", event.target.value)} />
+                          <Field label="分类标签" value={item.category} onChange={(event) => updateCatalogItem(index, "category", event.target.value)} />
+                        </div>
+                        <Field label="作品标题" value={item.title} onChange={(event) => updateCatalogItem(index, "title", event.target.value)} />
+                        <Field label="作品简介" value={item.description} multiline onChange={(event) => updateCatalogItem(index, "description", event.target.value)} />
+                        <Field label="竖版封面图片链接" value={item.image} onChange={(event) => updateCatalogItem(index, "image", event.target.value)} />
                         <UploadButton
-                          label="上传项目封面"
+                          label="上传竖版封面"
                           disabled={isUploading}
-                          onChange={(event) => uploadImage(event, `projects/${index}`, (publicUrl) => updateSectionItem("projects", index, "asset", publicUrl))}
+                          onChange={(event) => uploadImage(event, `catalog/${index}/cover`, (publicUrl) => updateCatalogItem(index, "image", publicUrl))}
                         />
-                        <p className="text-[10px] font-bold uppercase text-white/35">二级页轮播图片</p>
+                        <p className="text-[10px] font-bold uppercase text-white/35">二级页作品图片</p>
                         {item.gallery.map((image, imageIndex) => (
                           <div key={`${index}-${imageIndex}`} className="space-y-2">
                             <div className="grid grid-cols-[1fr_auto] gap-2">
                               <Field
                                 label={`第 ${imageIndex + 1} 张图片链接`}
                                 value={image}
-                                onChange={(event) => updateGalleryImage("projects", index, imageIndex, event.target.value)}
+                                onChange={(event) => updateCatalogGalleryImage(index, imageIndex, event.target.value)}
                               />
                               <button
                                 className="mt-5 grid size-10 place-items-center border border-white/15 text-white/45 hover:border-red-300 hover:text-red-300"
                                 type="button"
                                 title="删除图片"
-                                onClick={() => removeGalleryImage("projects", index, imageIndex)}
+                                onClick={() => removeCatalogGalleryImage(index, imageIndex)}
                               >
                                 <Trash2 size={15} />
                               </button>
@@ -1277,14 +1344,14 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                             <UploadButton
                               label={`上传第 ${imageIndex + 1} 张图片`}
                               disabled={isUploading}
-                              onChange={(event) => uploadImage(event, `projects/${index}/gallery`, (publicUrl) => updateGalleryImage("projects", index, imageIndex, publicUrl))}
+                              onChange={(event) => uploadImage(event, `catalog/${index}/gallery`, (publicUrl) => updateCatalogGalleryImage(index, imageIndex, publicUrl))}
                             />
                           </div>
                         ))}
                         <button
                           className="flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-[10px] font-bold uppercase text-white/60 hover:border-[#f5ea28] hover:text-[#f5ea28]"
                           type="button"
-                          onClick={() => addGalleryImage("projects", index)}
+                          onClick={() => addCatalogGalleryImage(index)}
                         >
                           <Plus size={14} /> 添加图片
                         </button>

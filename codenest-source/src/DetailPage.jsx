@@ -5,6 +5,23 @@ import { handleTransitionLink } from "./pageTransition";
 import { resetSpecularEdge, steerSpecularEdge } from "./specularEdge";
 
 function resolveDetail(detailId, content) {
+  if (detailId?.startsWith("catalog-")) {
+    const index = Number(detailId.slice("catalog-".length));
+    const item = content.projects.catalogItems?.[index];
+    if (!item) return null;
+    const gallery = [item.image, ...(item.gallery || [])].filter(
+      (image, imageIndex, images) => image && images.indexOf(image) === imageIndex,
+    );
+    return {
+      type: "Work Directory",
+      marker: item.index,
+      title: item.title,
+      description: item.description,
+      meta: item.category,
+      gallery,
+    };
+  }
+
   if (detailId?.startsWith("project-")) {
     const index = Number(detailId.slice("project-".length));
     const item = content.projects.items[index];

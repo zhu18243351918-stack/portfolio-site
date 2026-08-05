@@ -3,7 +3,7 @@ export const DEFAULT_CONTENT = {
   logoImage: "",
   navigation: {
     home: "首页",
-    projects: "精选项目",
+    projects: "工作目录",
     blog: "联系",
     about: "关于我",
     career: "工作履历",
@@ -25,7 +25,7 @@ export const DEFAULT_CONTENT = {
     description: "视觉设计师 / AI 设计师 / 品牌设计师",
   },
   sectionSizes: {
-    projects: 230,
+    projects: 85,
     blog: 120,
     resume: 140,
     about: 58,
@@ -96,10 +96,83 @@ export const DEFAULT_CONTENT = {
     ],
   },
   projects: {
-    eyebrow: "Selected Work / 01-03",
-    title: "Selected brand work.",
+    eyebrow: "Work Index / 01-06",
+    title: "Selected work directory.",
     description:
-      "从品牌升级、全渠道视觉规范到电商内容落地，每个项目都围绕真实业务目标建立视觉系统。点击项目可进入完整案例。",
+      "以竖版目录快速浏览品牌升级、电商视觉、全渠道系统、AI 创意与 IP 角色作品。点击任意卡片可进入完整案例与图片轮播。",
+    catalogItems: [
+      {
+        index: "01",
+        category: "E-COMMERCE / BEAUTY",
+        title: "敷尔佳电商视觉",
+        description: "核心品类主图、商品卡、平台会场与全渠道电商视觉规范。",
+        image: "./portfolio/project-02-cover.webp",
+        gallery: [
+          "./portfolio/project-02-01.webp",
+          "./portfolio/project-02-02.webp",
+          "./portfolio/project-02-03.webp",
+          "./portfolio/project-02-04.webp",
+        ],
+      },
+      {
+        index: "02",
+        category: "BRAND SYSTEM / BEAUTY",
+        title: "福瑞达品牌体系",
+        description: "从品牌策略到新零售终端，建立可复用的全渠道视觉资产。",
+        image: "./portfolio/project-03-cover.webp",
+        gallery: [
+          "./portfolio/project-03-01.webp",
+          "./portfolio/project-03-02.webp",
+          "./portfolio/project-03-03.webp",
+          "./portfolio/project-03-04.webp",
+        ],
+      },
+      {
+        index: "03",
+        category: "RETAIL / OMNICHANNEL",
+        title: "滔搏全渠道升级",
+        description: "连接 APP、小程序、营销活动与全国零售终端的视觉系统。",
+        image: "./portfolio/project-01-cover.webp",
+        gallery: [
+          "./portfolio/project-01-01.webp",
+          "./portfolio/project-01-02.webp",
+          "./portfolio/project-01-03.webp",
+          "./portfolio/project-01-04.webp",
+        ],
+      },
+      {
+        index: "04",
+        category: "AI / KEY VISUAL",
+        title: "AI 创意视觉",
+        description: "以 AI 辅助概念发散、场景延展和高频营销内容生产。",
+        image: "./portfolio/project-02-04.webp",
+        gallery: [
+          "./portfolio/project-02-03.webp",
+          "./portfolio/fragment-volga.webp",
+          "./portfolio/project-03-03.webp",
+        ],
+      },
+      {
+        index: "05",
+        category: "IP / CHARACTER",
+        title: "IP 角色与延展",
+        description: "角色多角度设定、性格表达与品牌传播场景延展。",
+        image: "./portfolio/catalog-ip-pink-mouse.webp",
+        gallery: ["./portfolio/catalog-ip-pink-mouse.webp"],
+      },
+      {
+        index: "06",
+        category: "SYSTEM / RETAIL",
+        title: "全渠道视觉规范",
+        description: "统一线上、线下、社媒与终端触点，提高资产复用效率。",
+        image: "./portfolio/project-01-04.webp",
+        gallery: [
+          "./portfolio/project-01-02.webp",
+          "./portfolio/fragment-topsports.webp",
+          "./portfolio/project-01-03.webp",
+        ],
+      },
+    ],
     items: [
       {
         index: "01",
