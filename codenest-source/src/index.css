@@ -291,12 +291,20 @@ textarea:focus-visible {
   }
 }
 
+.work-catalog-stack {
+  overflow: hidden;
+}
+
 .work-catalog-shell {
-  --catalog-card-width: clamp(196px, 15vw, 252px);
-  --catalog-card-height: clamp(348px, 29vw, 462px);
+  --catalog-card-width: clamp(240px, 20vw, 330px);
+  --catalog-card-height: clamp(320px, 26.667vw, 440px);
   position: relative;
   overflow: hidden;
-  padding-block: 22px 34px;
+  padding-block: 18px 30px;
+}
+
+.work-catalog-shell--secondary {
+  margin-top: -14px;
 }
 
 .work-catalog-track {
@@ -308,8 +316,15 @@ textarea:focus-visible {
 }
 
 .work-catalog-shell:hover .work-catalog-track,
-.work-catalog-shell:focus-within .work-catalog-track {
+.work-catalog-shell:focus-within .work-catalog-track,
+.work-catalog-stack:hover .work-catalog-track,
+.work-catalog-stack:focus-within .work-catalog-track {
   animation-play-state: paused;
+}
+
+.work-catalog-shell--secondary .work-catalog-track {
+  animation-duration: 96s;
+  animation-delay: -31s;
 }
 
 .work-catalog-group {
@@ -552,8 +567,8 @@ textarea:focus-visible {
   }
 
   .work-catalog-shell {
-    --catalog-card-width: min(72vw, 270px);
-    --catalog-card-height: min(112vw, 420px);
+    --catalog-card-width: min(78vw, 294px);
+    --catalog-card-height: min(104vw, 392px);
     overflow-x: auto;
     padding: 12px 20px 22px;
     scroll-snap-type: x proximity;
@@ -574,6 +589,10 @@ textarea:focus-visible {
 
   .work-catalog-cell {
     scroll-snap-align: start;
+  }
+
+  .work-catalog-shell--secondary {
+    margin-top: -4px;
   }
 
   .work-catalog-description {

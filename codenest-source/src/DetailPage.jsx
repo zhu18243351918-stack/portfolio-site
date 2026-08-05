@@ -13,7 +13,7 @@ function resolveDetail(detailId, content) {
       (image, imageIndex, images) => image && images.indexOf(image) === imageIndex,
     );
     return {
-      type: "Work Directory",
+      type: "Selected Work",
       marker: item.index,
       title: item.title,
       description: item.description,

@@ -171,7 +171,7 @@ function mergeContent(value = {}) {
       ...DEFAULT_CONTENT.navigation,
       ...(value.navigation || {}),
       home: value.navigation?.home?.trim() || DEFAULT_CONTENT.navigation.home,
-      projects: migratedText(value.navigation?.projects, ["PROJECTS", "工作介绍", "精选项目"], DEFAULT_CONTENT.navigation.projects),
+      projects: migratedText(value.navigation?.projects, ["PROJECTS", "工作介绍", "精选项目", "工作目录"], DEFAULT_CONTENT.navigation.projects),
       blog: migratedText(value.navigation?.blog, ["BLOG", "工作内容"], DEFAULT_CONTENT.navigation.blog),
       resume: migratedText(value.navigation?.resume, ["RESUME", "其他"], DEFAULT_CONTENT.navigation.resume),
       about: migratedText(value.navigation?.about, ["ABOUT", "个人资料"], DEFAULT_CONTENT.navigation.about),
@@ -183,7 +183,7 @@ function mergeContent(value = {}) {
       projects:
         incomingProjectsSize === 230
           ? DEFAULT_CONTENT.sectionSizes.projects
-          : Math.min(160, Math.max(85, incomingProjectsSize || DEFAULT_CONTENT.sectionSizes.projects)),
+          : Math.min(180, Math.max(85, incomingProjectsSize || DEFAULT_CONTENT.sectionSizes.projects)),
       about:
         [80, 120].includes(incomingAboutSize)
           ? DEFAULT_CONTENT.sectionSizes.about
@@ -201,10 +201,10 @@ function mergeContent(value = {}) {
     projects: {
       ...DEFAULT_CONTENT.projects,
       ...(value.projects || {}),
-      eyebrow: migratedText(value.projects?.eyebrow, ["Project-Based Learning", "工作介绍", "Selected Work / 01-03"], DEFAULT_CONTENT.projects.eyebrow),
+      eyebrow: migratedText(value.projects?.eyebrow, ["Project-Based Learning", "工作介绍", "Selected Work / 01-03", "Work Index / 01-06"], DEFAULT_CONTENT.projects.eyebrow),
       title: migratedText(
         value.projects?.title,
-        ["Build work that proves what you can do.", "Selected projects built for real brands.", "Selected work for brands in motion.", "Selected brand work."],
+        ["Build work that proves what you can do.", "Selected projects built for real brands.", "Selected work for brands in motion.", "Selected brand work.", "Selected work directory."],
         DEFAULT_CONTENT.projects.title,
       ),
       description: migratedText(
@@ -212,6 +212,7 @@ function mergeContent(value = {}) {
         [
           "Move from guided fundamentals to portfolio-ready products. Each project mirrors the decisions, constraints, and feedback loops of a real engineering team.",
           "从品牌升级、全渠道视觉规范到电商内容落地，每个项目都围绕真实业务目标建立视觉系统。点击项目可进入完整案例。",
+          "以竖版目录快速浏览品牌升级、电商视觉、全渠道系统、AI 创意与 IP 角色作品。点击任意卡片可进入完整案例与图片轮播。",
         ],
         DEFAULT_CONTENT.projects.description,
       ),
@@ -1270,7 +1271,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                   </EditorGroup>
 
                   <EditorGroup title="板块高度">
-                    <RangeField label="工作目录" value={draft.sectionSizes.projects} min={85} max={160} onChange={(event) => updateSize("projects", event.target.value)} />
+                    <RangeField label="优秀作品" value={draft.sectionSizes.projects} min={85} max={180} onChange={(event) => updateSize("projects", event.target.value)} />
                     <RangeField label="个人优势展示" value={draft.sectionSizes.blog} onChange={(event) => updateSize("blog", event.target.value)} />
                     <RangeField label="能力列表" value={draft.sectionSizes.resume} onChange={(event) => updateSize("resume", event.target.value)} />
                     <RangeField label="个人介绍" value={draft.sectionSizes.about} min={50} max={80} onChange={(event) => updateSize("about", event.target.value)} />
@@ -1304,7 +1305,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                     ))}
                   </EditorGroup>
 
-                  <EditorGroup title="工作目录">
+                  <EditorGroup title="优秀作品">
                     <Field label="小标题" value={draft.projects.eyebrow} onChange={(event) => updateSection("projects", "eyebrow", event.target.value)} />
                     <Field label="标题" value={draft.projects.title} multiline onChange={(event) => updateSection("projects", "title", event.target.value)} />
                     <Field label="描述文字" value={draft.projects.description} multiline onChange={(event) => updateSection("projects", "description", event.target.value)} />

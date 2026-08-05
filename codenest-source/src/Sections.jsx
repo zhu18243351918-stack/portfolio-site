@@ -253,6 +253,12 @@ function CatalogCard({ item, index, duplicate = false }) {
 
 export function ProjectsSection({ content, size }) {
   const catalogItems = content.catalogItems || [];
+  const catalogEntries = catalogItems.map((item, index) => ({ item, index }));
+  const rowOffset = Math.ceil(catalogEntries.length / 2);
+  const catalogRows = [
+    catalogEntries,
+    [...catalogEntries.slice(rowOffset), ...catalogEntries.slice(0, rowOffset)],
+  ];
 
   return (
     <section
@@ -265,7 +271,7 @@ export function ProjectsSection({ content, size }) {
         <div data-motion-header>
           <div className="border-t border-white/16 pt-7">
             <div data-motion-label>
-              <SectionLabel index="03">Work Directory / Selected Work</SectionLabel>
+              <SectionLabel index="03">Selected Work / Portfolio</SectionLabel>
             </div>
           </div>
           <div className="mt-10 grid gap-8 lg:grid-cols-[1.12fr_0.88fr] lg:items-end lg:gap-16">
@@ -282,16 +288,28 @@ export function ProjectsSection({ content, size }) {
         </div>
       </div>
 
-      <div className="work-catalog-shell mt-12 sm:mt-14 lg:mt-16" data-motion-group>
-        <div className="work-catalog-track">
-          {[0, 1].map((groupIndex) => (
-            <div key={groupIndex} className="work-catalog-group" aria-hidden={groupIndex === 1 || undefined}>
-              {catalogItems.map((item, index) => (
-                <CatalogCard key={`${groupIndex}-${item.index}-${item.title}`} item={item} index={index} duplicate={groupIndex === 1} />
+      <div className="work-catalog-stack mt-12 sm:mt-14 lg:mt-16" data-motion-group>
+        {catalogRows.map((entries, rowIndex) => (
+          <div
+            key={rowIndex}
+            className={`work-catalog-shell ${rowIndex === 1 ? "work-catalog-shell--secondary" : ""}`}
+          >
+            <div className="work-catalog-track">
+              {[0, 1].map((groupIndex) => (
+                <div key={groupIndex} className="work-catalog-group" aria-hidden={groupIndex === 1 || undefined}>
+                  {entries.map(({ item, index }) => (
+                    <CatalogCard
+                      key={`${rowIndex}-${groupIndex}-${item.index}-${item.title}`}
+                      item={item}
+                      index={index}
+                      duplicate={groupIndex === 1 || rowIndex === 1}
+                    />
+                  ))}
+                </div>
               ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </section>
   );

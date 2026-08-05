@@ -3,7 +3,7 @@ export const DEFAULT_CONTENT = {
   logoImage: "",
   navigation: {
     home: "首页",
-    projects: "工作目录",
+    projects: "优秀作品",
     blog: "联系",
     about: "关于我",
     career: "工作履历",
@@ -96,10 +96,10 @@ export const DEFAULT_CONTENT = {
     ],
   },
   projects: {
-    eyebrow: "Work Index / 01-06",
-    title: "Selected work directory.",
+    eyebrow: "Selected Work / 01-06",
+    title: "Selected works.",
     description:
-      "以竖版目录快速浏览品牌升级、电商视觉、全渠道系统、AI 创意与 IP 角色作品。点击任意卡片可进入完整案例与图片轮播。",
+      "以两排 3:4 作品卡片浏览品牌升级、电商视觉、全渠道系统、AI 创意与 IP 角色项目。点击任意卡片可进入完整案例与图片轮播。",
     catalogItems: [
       {
         index: "01",
