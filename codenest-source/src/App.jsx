@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
@@ -18,6 +18,19 @@ import {
   X,
 } from "lucide-react";
 import { CONTENT_STORAGE_KEY, DEFAULT_CONTENT } from "./content";
+import ContentEditorV2 from "./ContentEditorV2";
+import {
+  clearEditorDraft,
+  contentSnapshot,
+  getContentValue,
+  imagePathArea,
+  imageRequirement,
+  normalizeEditTarget,
+  readEditorDraft,
+  setContentValue,
+  targetFromElement,
+  writeEditorDraft,
+} from "./editorUtils";
 import { CareerSection, ContactSection, ExperienceSection, ProjectsSection, StrengthsSection } from "./Sections";
 import { setupHomeAnimations, shouldPlayOpening } from "./animations";
 import DetailPage from "./DetailPage";
@@ -75,6 +88,22 @@ const HERO_SCENES = [
     source: "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260702_080959_4cac5234-3573-464e-a5b7-76b94b8a7d61.mp4",
   },
 ];
+
+function readImageDimensions(file) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      resolve({ width: image.naturalWidth, height: image.naturalHeight });
+      URL.revokeObjectURL(objectUrl);
+    };
+    image.onerror = () => {
+      reject(new Error("无法读取图片尺寸。"));
+      URL.revokeObjectURL(objectUrl);
+    };
+    image.src = objectUrl;
+  });
+}
 
 const LEGACY_PROJECT_TITLES = [
   "Ship a production-ready product",
@@ -587,11 +616,17 @@ function HeroSceneBackground({ content, activeScene }) {
 function Logo({ brand, logoImage }) {
   return (
     <a className="cursor-target group flex min-w-0 items-center gap-3 text-[#f1efe4]" href="#top" aria-label={`${brand} home`}>
-      <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-[4px] border border-white/20 bg-white/8 font-mono text-[10px] font-black text-white backdrop-blur-md">
+      <span
+        className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-[4px] border border-white/20 bg-white/8 font-mono text-[10px] font-black text-white backdrop-blur-md"
+        data-edit-path="logoImage"
+        data-edit-kind="image"
+        data-edit-label="Logo"
+        data-edit-section="首页"
+      >
         {logoImage ? <img className="h-full w-full object-cover" src={logoImage} alt="" /> : "A/P"}
         {!logoImage && <span className="absolute right-1 top-1 size-2 bg-[#e5ff48] transition-transform duration-300 group-hover:scale-125" />}
       </span>
-      <span className="max-w-56 truncate text-[14px] font-bold tracking-[0]">{brand}</span>
+      <span className="max-w-56 truncate text-[14px] font-bold tracking-[0]" data-edit-path="brand" data-edit-kind="text" data-edit-label="品牌名称" data-edit-section="首页">{brand}</span>
     </a>
   );
 }
@@ -700,6 +735,10 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
                 className="cursor-target max-w-36 truncate py-2 text-[11px] font-bold uppercase text-white/58 transition-colors duration-200 hover:text-[#e5ff48] focus-visible:text-[#e5ff48]"
                 href={item.href}
                 title={item.label}
+                data-edit-path={`navigation.${item.key}`}
+                data-edit-kind="text"
+                data-edit-label={`${item.label}菜单文字`}
+                data-edit-section="导航"
               >
                 {item.label}
               </a>
@@ -739,6 +778,10 @@ function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, o
                 className="mb-1 flex items-center justify-between border-b border-white/14 px-1 py-6 text-3xl font-semibold text-[#f1efe4] transition-colors hover:text-[#e5ff48]"
                 href={item.href}
                 onClick={onClose}
+                data-edit-path={`navigation.${item.key}`}
+                data-edit-kind="text"
+                data-edit-label={`${item.label}菜单文字`}
+                data-edit-section="导航"
               >
                 <span className="min-w-0 break-words pr-4">{item.label}</span>
                 <span className="font-mono text-[10px] text-white/36">0{index + 1}</span>
@@ -1572,10 +1615,24 @@ function App() {
   const [activeHeroScene, setActiveHeroScene] = useState(0);
   const [isSceneTransitioning, setIsSceneTransitioning] = useState(false);
   const [content, setContent] = useState(readInitialContent);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editorMode, setEditorMode] = useState("edit");
+  const [selectedEditTarget, setSelectedEditTarget] = useState(null);
+  const [draftHistory, setDraftHistory] = useState({ entries: [], index: -1 });
+  const [recoverableDraft, setRecoverableDraft] = useState(readEditorDraft);
+  const [draftStatus, setDraftStatus] = useState("idle");
+  const [previewOverrides, setPreviewOverrides] = useState({});
+  const [uploadStates, setUploadStates] = useState({});
   const [session, setSession] = useState(null);
   const [cloudStatus, setCloudStatus] = useState("connecting");
   const [isContentReady, setIsContentReady] = useState(false);
-  const openEditor = () => window.dispatchEvent(new Event("codenest:open-editor"));
+  const hasEditedDraftRef = useRef(false);
+  const lastDraftChangeRef = useRef({ key: "", time: 0 });
+  const previewObjectUrlsRef = useRef(new Set());
+  const openEditor = useCallback(() => {
+    setIsEditorOpen(true);
+    setEditorMode("edit");
+  }, []);
 
   const handleRouteNavigation = useCallback(({ href, historyMode = "push" }) => {
     const destination = new URL(href, window.location.href);
@@ -1589,10 +1646,154 @@ function App() {
     if (nextDetailId) window.scrollTo({ top: 0, behavior: "auto" });
   }, []);
 
+  const draftContent = draftHistory.index >= 0 ? draftHistory.entries[draftHistory.index] : content;
+  const hasDraftChanges = useMemo(
+    () => contentSnapshot(draftContent) !== contentSnapshot(content),
+    [content, draftContent],
+  );
+  const renderedContent = useMemo(
+    () => Object.entries(previewOverrides).reduce(
+      (current, [path, value]) => setContentValue(current, path, value),
+      draftContent,
+    ),
+    [draftContent, previewOverrides],
+  );
+  const canUndoDraft = draftHistory.index > 0;
+  const canRedoDraft = draftHistory.index >= 0 && draftHistory.index < draftHistory.entries.length - 1;
+
+  const resetDraftHistory = useCallback((value, edited = false) => {
+    setDraftHistory({ entries: [value], index: 0 });
+    hasEditedDraftRef.current = edited;
+    lastDraftChangeRef.current = { key: "", time: 0 };
+  }, []);
+
+  const applyDraftChange = useCallback((path, value, historyKey = path, coalesce = true) => {
+    const now = Date.now();
+    hasEditedDraftRef.current = true;
+    setRecoverableDraft(null);
+    setDraftStatus("saving");
+    setUploadStates((current) => {
+      const matchingKeys = Object.keys(current).filter(
+        (key) => key === path || key.startsWith(`${path}.`) || path.startsWith(`${key}.`),
+      );
+      if (!matchingKeys.length) return current;
+      const next = { ...current };
+      matchingKeys.forEach((key) => delete next[key]);
+      return next;
+    });
+    setDraftHistory((current) => {
+      const base = current.index >= 0 ? current.entries[current.index] : content;
+      const next = setContentValue(base, path, value);
+      if (contentSnapshot(base) === contentSnapshot(next)) return current;
+
+      const entries = current.entries.length ? current.entries.slice(0, current.index + 1) : [base];
+      const shouldCoalesce =
+        coalesce &&
+        current.index === current.entries.length - 1 &&
+        lastDraftChangeRef.current.key === historyKey &&
+        now - lastDraftChangeRef.current.time < 700;
+
+      lastDraftChangeRef.current = { key: historyKey, time: now };
+      if (shouldCoalesce) {
+        entries[entries.length - 1] = next;
+        return { entries, index: entries.length - 1 };
+      }
+
+      const nextEntries = [...entries, next].slice(-50);
+      return { entries: nextEntries, index: nextEntries.length - 1 };
+    });
+  }, [content]);
+
+  const undoDraft = useCallback(() => {
+    setDraftHistory((current) => {
+      if (current.index <= 0) return current;
+      hasEditedDraftRef.current = true;
+      setDraftStatus("saving");
+      lastDraftChangeRef.current = { key: "", time: 0 };
+      return { ...current, index: current.index - 1 };
+    });
+  }, []);
+
+  const redoDraft = useCallback(() => {
+    setDraftHistory((current) => {
+      if (current.index < 0 || current.index >= current.entries.length - 1) return current;
+      hasEditedDraftRef.current = true;
+      setDraftStatus("saving");
+      lastDraftChangeRef.current = { key: "", time: 0 };
+      return { ...current, index: current.index + 1 };
+    });
+  }, []);
+
   useEffect(() => {
     const handlePopState = () => requestPageTransition(window.location.href, "pop");
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (!hasEditedDraftRef.current) resetDraftHistory(content);
+  }, [content, resetDraftHistory]);
+
+  useEffect(() => {
+    if (!isContentReady || !recoverableDraft?.content) return;
+    const recovered = mergeContent(recoverableDraft.content);
+    if (contentSnapshot(recovered) !== contentSnapshot(content)) return;
+    clearEditorDraft();
+    setRecoverableDraft(null);
+  }, [content, isContentReady, recoverableDraft]);
+
+  useEffect(() => {
+    if (!hasEditedDraftRef.current) return undefined;
+    if (!hasDraftChanges) {
+      clearEditorDraft();
+      setDraftStatus("idle");
+      return undefined;
+    }
+
+    setDraftStatus("saving");
+    const timer = window.setTimeout(() => {
+      try {
+        writeEditorDraft(draftContent);
+        setDraftStatus("saved");
+      } catch {
+        setDraftStatus("error");
+      }
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [draftContent, hasDraftChanges]);
+
+  useEffect(() => {
+    document.body.classList.toggle("portfolio-editing", isEditorOpen && editorMode === "edit");
+    document.body.classList.toggle("portfolio-editor-preview", isEditorOpen && editorMode === "preview");
+
+    const handleEditableClick = (event) => {
+      if (!isEditorOpen || editorMode !== "edit" || event.target.closest("[data-editor-panel]")) return;
+      const editable = event.target.closest("[data-edit-path]");
+      if (!editable) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setSelectedEditTarget(targetFromElement(editable));
+    };
+
+    document.addEventListener("click", handleEditableClick, true);
+    return () => {
+      document.body.classList.remove("portfolio-editing", "portfolio-editor-preview");
+      document.removeEventListener("click", handleEditableClick, true);
+    };
+  }, [editorMode, isEditorOpen]);
+
+  useEffect(() => {
+    document.querySelectorAll(".is-editor-selected").forEach((element) => element.classList.remove("is-editor-selected"));
+    if (!isEditorOpen || editorMode !== "edit" || !selectedEditTarget?.path) return undefined;
+    document.querySelectorAll("[data-edit-path]").forEach((element) => {
+      if (element.dataset.editPath === selectedEditTarget.path) element.classList.add("is-editor-selected");
+    });
+    return () => document.querySelectorAll(".is-editor-selected").forEach((element) => element.classList.remove("is-editor-selected"));
+  }, [editorMode, isEditorOpen, selectedEditTarget]);
+
+  useEffect(() => () => {
+    previewObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    previewObjectUrlsRef.current.clear();
   }, []);
 
   const changeHeroScene = useCallback((nextScene) => {
@@ -1736,44 +1937,159 @@ function App() {
     }
   };
 
+  const handleEditorImageUpload = async (file, target) => {
+    const path = target.path;
+    if (!file || !path) return;
+    if (file.size > 12 * 1024 * 1024) {
+      setUploadStates((current) => ({
+        ...current,
+        [path]: { status: "error", error: "请选择小于 12MB 的图片。" },
+      }));
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const previousValue = getContentValue(draftContent, path) || "";
+    previewObjectUrlsRef.current.add(objectUrl);
+    setPreviewOverrides((current) => ({ ...current, [path]: objectUrl }));
+    setUploadStates((current) => ({
+      ...current,
+      [path]: {
+        status: "uploading",
+        file,
+        fileName: file.name,
+        fileSize: file.size,
+        previousValue,
+        error: "",
+        warning: "",
+      },
+    }));
+
+    const dimensions = await readImageDimensions(file).catch(() => null);
+    const requirement = imageRequirement(path);
+    const actualRatio = dimensions?.height ? dimensions.width / dimensions.height : null;
+    const ratioMismatch = requirement.ratio && actualRatio
+      ? Math.abs(actualRatio / requirement.ratio - 1) > 0.08
+      : false;
+    const warning = ratioMismatch
+      ? `当前图片比例约为 ${dimensions.width}:${dimensions.height}，${requirement.label}。仍会按当前文件上传。`
+      : "";
+
+    setUploadStates((current) => ({
+      ...current,
+      [path]: { ...current[path], dimensions, warning },
+    }));
+
+    try {
+      const publicUrl = await handleUpload(file, imagePathArea(path));
+      applyDraftChange(path, publicUrl, `${path}:upload`, false);
+      setUploadStates((current) => ({
+        ...current,
+        [path]: {
+          status: "success",
+          file,
+          fileName: file.name,
+          fileSize: file.size,
+          previousValue,
+          dimensions,
+          warning,
+          publicUrl,
+        },
+      }));
+    } catch {
+      setUploadStates((current) => ({
+        ...current,
+        [path]: {
+          status: "error",
+          file,
+          fileName: file.name,
+          fileSize: file.size,
+          previousValue,
+          dimensions,
+          warning,
+          error: "图片上传失败，页面已恢复原图。请检查网络后重试。",
+        },
+      }));
+    } finally {
+      setPreviewOverrides((current) => {
+        const next = { ...current };
+        delete next[path];
+        return next;
+      });
+      previewObjectUrlsRef.current.delete(objectUrl);
+      URL.revokeObjectURL(objectUrl);
+    }
+  };
+
   const saveContent = async (nextContent) => {
     const merged = mergeContent(nextContent);
-    setContent(merged);
 
-    let backupSaved = false;
-    let fullContentSaved = false;
+    if (!session) {
+      return { success: false, content: merged, message: "管理员登录已过期，请重新登录后发布。" };
+    }
+    try {
+      await saveRemoteContent(stripLocalImages(merged));
+    } catch {
+      setCloudStatus("offline");
+      return { success: false, content: merged, message: "发布失败，草稿仍保存在当前浏览器中，请检查 Supabase 或网络后重试。" };
+    }
+
+    setContent(merged);
+    setCloudStatus("online");
     try {
       localStorage.setItem(CONTENT_STORAGE_KEY, JSON.stringify(stripLocalImages(merged)));
-      backupSaved = true;
     } catch {
-      backupSaved = false;
+      // Remote publish is authoritative; a blocked local cache must not turn success into failure.
     }
-
-    try {
-      await writePersistentContent(merged);
-      fullContentSaved = true;
-    } catch {
-      fullContentSaved = false;
-    }
-
+    await writePersistentContent(merged).catch(() => undefined);
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
-
-    try {
-      if (!session) throw new Error("管理员登录已过期，请重新登录后发布。");
-      await saveRemoteContent(stripLocalImages(merged));
-      setCloudStatus("online");
-      return containsLocalImage(merged)
-        ? "已发布到 Supabase。本地图片未被发布，请重新上传这些图片后再保存。"
-        : "已发布到 Supabase，所有访问者都将看到当前版本。";
-    } catch (remoteError) {
-      setCloudStatus("offline");
-      if (fullContentSaved || backupSaved) {
-        return "已保存在当前浏览器中，但云端发布失败，请检查 Supabase 设置后重试。";
-      }
-      return "预览已更新，但 Supabase 和浏览器存储都未能保存修改。";
-    }
-
+    return { success: true, content: merged, message: "已发布到 Supabase，所有访问者都将看到当前版本。" };
   };
+
+  const restoreRecoverableDraft = useCallback(() => {
+    if (!recoverableDraft?.content) return;
+    const restored = mergeContent(recoverableDraft.content);
+    setDraftHistory({ entries: [content, restored], index: 1 });
+    hasEditedDraftRef.current = true;
+    setRecoverableDraft(null);
+    setDraftStatus("saved");
+  }, [content, recoverableDraft]);
+
+  const discardStoredDraft = useCallback(() => {
+    clearEditorDraft();
+    setRecoverableDraft(null);
+  }, []);
+
+  const discardDraftChanges = useCallback(() => {
+    previewObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    previewObjectUrlsRef.current.clear();
+    setPreviewOverrides({});
+    setUploadStates({});
+    clearEditorDraft();
+    setRecoverableDraft(null);
+    setSelectedEditTarget(null);
+    resetDraftHistory(content);
+    setDraftStatus("idle");
+  }, [content, resetDraftHistory]);
+
+  const publishDraft = useCallback(async () => {
+    const result = await saveContent(draftContent);
+    if (result.success) {
+      clearEditorDraft();
+      setRecoverableDraft(null);
+      hasEditedDraftRef.current = false;
+      resetDraftHistory(result.content);
+      setDraftStatus("published");
+    } else {
+      setDraftStatus("publish-error");
+    }
+    return result;
+  }, [draftContent, resetDraftHistory, session]);
+
+  const selectEditTarget = useCallback((target) => {
+    setSelectedEditTarget(normalizeEditTarget(target));
+    if (target) setEditorMode("edit");
+  }, []);
 
   const resetContent = async () => {
     localStorage.removeItem(CONTENT_STORAGE_KEY);
@@ -1783,22 +2099,43 @@ function App() {
     return DEFAULT_CONTENT;
   };
 
+  const editorProps = {
+    isOpen: isEditorOpen,
+    onOpen: openEditor,
+    onClose: () => setIsEditorOpen(false),
+    session,
+    cloudStatus,
+    onSignIn: handleSignIn,
+    onSignOut: handleSignOut,
+    editorMode,
+    onEditorModeChange: setEditorMode,
+    draft: renderedContent,
+    publishedContent: content,
+    selectedTarget: selectedEditTarget,
+    onSelectTarget: selectEditTarget,
+    recoverableDraft,
+    onRestoreDraft: restoreRecoverableDraft,
+    onDiscardStoredDraft: discardStoredDraft,
+    hasChanges: hasDraftChanges,
+    draftStatus,
+    canUndo: canUndoDraft,
+    canRedo: canRedoDraft,
+    onUndo: undoDraft,
+    onRedo: redoDraft,
+    onChange: applyDraftChange,
+    onUploadImage: handleEditorImageUpload,
+    uploadStates,
+    onPublish: publishDraft,
+    onDiscardChanges: discardDraftChanges,
+  };
+
   if (detailId) {
     return (
       <>
         <NavigationTransition onNavigate={handleRouteNavigation} />
         <TargetCursor />
-        <DetailPage detailId={detailId} content={content} onEdit={openEditor} />
-        <ContentEditor
-          content={content}
-          session={session}
-          cloudStatus={cloudStatus}
-          onSignIn={handleSignIn}
-          onSignOut={handleSignOut}
-          onSave={saveContent}
-          onReset={resetContent}
-          onUpload={handleUpload}
-        />
+        <DetailPage detailId={detailId} content={renderedContent} onEdit={openEditor} />
+        <ContentEditorV2 {...editorProps} />
       </>
     );
   }
@@ -1807,19 +2144,19 @@ function App() {
     <>
       <NavigationTransition onNavigate={handleRouteNavigation} />
       <TargetCursor />
-      <PortfolioSidebar navigation={content.navigation} />
+      <PortfolioSidebar navigation={renderedContent.navigation} />
       <main ref={pageRef} className="min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]">
       <section id="top" data-hero className="relative min-h-[100dvh] overflow-hidden bg-[#08090b]">
-        <HeroSceneBackground content={content} activeScene={activeHeroScene} />
+        <HeroSceneBackground content={renderedContent} activeScene={activeHeroScene} />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,6,8,0.92)_0%,rgba(5,6,8,0.42)_52%,rgba(5,6,8,0.66)_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.2)_0%,rgba(5,6,8,0.12)_40%,rgba(5,6,8,0.94)_100%)]" />
         <div className="noise-overlay absolute inset-0 opacity-35" aria-hidden="true" />
         <div className="hero-grid absolute inset-0" aria-hidden="true" />
 
         <Navigation
-          brand={content.brand}
-          logoImage={content.logoImage}
-          navigation={content.navigation}
+          brand={renderedContent.brand}
+          logoImage={renderedContent.logoImage}
+          navigation={renderedContent.navigation}
           isOpen={isMenuOpen}
           onToggle={() => setIsMenuOpen((current) => !current)}
           onClose={() => setIsMenuOpen(false)}
@@ -1829,13 +2166,13 @@ function App() {
         <div className="portfolio-layout relative z-10 mx-auto flex min-h-[100dvh] max-w-[1700px] flex-col justify-end px-5 pb-9 pt-32 sm:px-8 sm:pb-12 lg:px-12 lg:pb-14">
           <div className="max-w-[1500px]">
             <div data-hero-meta className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-7">
-              <span className="text-[10px] font-bold uppercase text-[#e5ff48]">{content.eyebrow}</span>
+              <span className="text-[10px] font-bold uppercase text-[#e5ff48]" data-edit-path="eyebrow" data-edit-kind="text" data-edit-label="首页身份标签" data-edit-section="首页">{renderedContent.eyebrow}</span>
               <span className="hidden h-px w-16 bg-white/28 sm:block" />
               <span className="text-[10px] font-bold uppercase text-white/46">Shanghai · Available 2026</span>
             </div>
 
-            <h1 className="display-editorial mt-7 max-w-[13ch] text-[56px] leading-[1.02] text-[#f1efe4] sm:text-[82px] sm:leading-[0.9] lg:text-[118px] lg:leading-[0.84] xl:text-[150px] 2xl:text-[164px]">
-              {content.headline.trim().split(/\s+/).map((word, index, words) => (
+            <h1 className="display-editorial mt-7 max-w-[13ch] text-[56px] leading-[1.02] text-[#f1efe4] sm:text-[82px] sm:leading-[0.9] lg:text-[118px] lg:leading-[0.84] xl:text-[150px] 2xl:text-[164px]" data-edit-path="headline" data-edit-kind="text" data-edit-label="首页主标题" data-edit-section="首页">
+              {renderedContent.headline.trim().split(/\s+/).map((word, index, words) => (
                 <span key={`${word}-${index}`}>
                   <span className="hero-word-mask">
                     <span data-hero-word className="hero-word">
@@ -1849,22 +2186,22 @@ function App() {
             </h1>
 
             <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_0.72fr] lg:items-end lg:gap-20">
-              <p data-hero-copy className="max-w-2xl text-sm leading-7 text-white/58 sm:text-base sm:leading-8">{content.description}</p>
+              <p data-hero-copy className="max-w-2xl text-sm leading-7 text-white/58 sm:text-base sm:leading-8" data-edit-path="description" data-edit-kind="text" data-edit-label="首页简介" data-edit-section="首页" data-edit-multiline="true">{renderedContent.description}</p>
               <div data-hero-cta className="flex flex-wrap gap-3 lg:justify-self-end">
                 <a className="cursor-target group inline-flex min-h-14 items-center gap-5 rounded-full bg-[#e5ff48] px-6 text-[11px] font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-1" href="#projects">
-                  {content.ctaLabel}
+                  <span data-edit-path="ctaLabel" data-edit-kind="text" data-edit-label="首页按钮文字" data-edit-section="首页">{renderedContent.ctaLabel}</span>
                   <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} />
                 </a>
-                <a className="cursor-target inline-flex min-h-14 items-center gap-3 rounded-full border border-white/24 bg-black/16 px-6 text-[11px] font-bold uppercase text-white backdrop-blur-md transition-colors hover:border-white/54" href={`mailto:${content.about.email}`}>
+                <a className="cursor-target inline-flex min-h-14 items-center gap-3 rounded-full border border-white/24 bg-black/16 px-6 text-[11px] font-bold uppercase text-white backdrop-blur-md transition-colors hover:border-white/54" href={`mailto:${renderedContent.about.email}`}>
                   Contact me
                 </a>
               </div>
             </div>
 
             <div data-hero-foot className="mt-10 grid gap-5 border-t border-white/16 pt-6 text-[10px] font-bold uppercase text-white/38 sm:grid-cols-3 lg:mt-14">
-              <span>{content.card.year}</span>
-              <span className="sm:text-center">{content.about.role}</span>
-              {content.mediaMode === "video" && !content.videoUrl?.includes(".m3u8") ? (
+              <span data-edit-path="card.year" data-edit-kind="text" data-edit-label="首页年份" data-edit-section="首页">{renderedContent.card.year}</span>
+              <span className="sm:text-center" data-edit-path="about.role" data-edit-kind="text" data-edit-label="身份 / 职位" data-edit-section="关于我">{renderedContent.about.role}</span>
+              {renderedContent.mediaMode === "video" && !renderedContent.videoUrl?.includes(".m3u8") ? (
                 <div className="hero-scene-switcher grid grid-cols-4 gap-1 sm:justify-self-end" aria-label="Hero scenes">
                   {HERO_SCENES.map((scene, index) => (
                     <button
@@ -1890,21 +2227,12 @@ function App() {
         </div>
       </section>
 
-      <ExperienceSection content={content.about} size={content.sectionSizes.about} />
-      <CareerSection content={content.career} size={content.sectionSizes.career} />
-      <ProjectsSection content={content.projects} size={content.sectionSizes.projects} />
-      <StrengthsSection content={content.blog} capabilities={content.resume} size={Math.max(content.sectionSizes.blog, content.sectionSizes.resume)} />
-      <ContactSection content={content.about} />
-      <ContentEditor
-        content={content}
-        session={session}
-        cloudStatus={cloudStatus}
-        onSignIn={handleSignIn}
-        onSignOut={handleSignOut}
-        onSave={saveContent}
-        onReset={resetContent}
-        onUpload={handleUpload}
-      />
+      <ExperienceSection content={renderedContent.about} size={renderedContent.sectionSizes.about} />
+      <CareerSection content={renderedContent.career} size={renderedContent.sectionSizes.career} />
+      <ProjectsSection content={renderedContent.projects} size={renderedContent.sectionSizes.projects} />
+      <StrengthsSection content={renderedContent.blog} capabilities={renderedContent.resume} size={Math.max(renderedContent.sectionSizes.blog, renderedContent.sectionSizes.resume)} />
+      <ContactSection content={renderedContent.about} />
+      <ContentEditorV2 {...editorProps} />
       </main>
     </>
   );

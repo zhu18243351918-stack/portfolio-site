@@ -9,16 +9,23 @@ function resolveDetail(detailId, content) {
     const index = Number(detailId.slice("catalog-".length));
     const item = content.projects.catalogItems?.[index];
     if (!item) return null;
-    const gallery = [item.image, ...(item.gallery || [])].filter(
-      (image, imageIndex, images) => image && images.indexOf(image) === imageIndex,
-    );
+    const basePath = `projects.catalogItems.${index}`;
+    const galleryEntries = [
+      { image: item.image, path: `${basePath}.image` },
+      ...(item.gallery || []).map((image, imageIndex) => ({ image, path: `${basePath}.gallery.${imageIndex}` })),
+    ].filter((entry, entryIndex, entries) => entry.image && entries.findIndex((candidate) => candidate.image === entry.image) === entryIndex);
     return {
       type: "Selected Work",
       marker: item.index,
       title: item.title,
       description: item.description,
       meta: item.category,
-      gallery,
+      gallery: galleryEntries.map((entry) => entry.image),
+      galleryTargets: galleryEntries.map((entry) => entry.path),
+      titlePath: `${basePath}.title`,
+      descriptionPath: `${basePath}.description`,
+      metaPath: `${basePath}.category`,
+      galleryPath: `${basePath}.gallery`,
     };
   }
 
@@ -26,13 +33,20 @@ function resolveDetail(detailId, content) {
     const index = Number(detailId.slice("project-".length));
     const item = content.projects.items[index];
     if (!item) return null;
+    const basePath = `projects.items.${index}`;
+    const gallery = item.gallery?.length ? item.gallery : [item.asset];
     return {
       type: "Selected project",
       marker: item.index,
       title: item.title,
       description: item.description,
       meta: `${item.label} / ${item.metric}`,
-      gallery: item.gallery?.length ? item.gallery : [item.asset],
+      gallery,
+      galleryTargets: gallery.map((_, imageIndex) => item.gallery?.length ? `${basePath}.gallery.${imageIndex}` : `${basePath}.asset`),
+      titlePath: `${basePath}.title`,
+      descriptionPath: `${basePath}.description`,
+      metaPath: `${basePath}.label`,
+      galleryPath: `${basePath}.gallery`,
     };
   }
 
@@ -40,13 +54,20 @@ function resolveDetail(detailId, content) {
     const index = Number(detailId.slice("blog-".length));
     const item = content.blog.items[index];
     if (!item) return null;
+    const basePath = `blog.items.${index}`;
+    const gallery = item.gallery?.length ? item.gallery : [item.asset];
     return {
       type: "Design strength",
       marker: String(index + 1).padStart(2, "0"),
       title: item.title,
       description: content.blog.description,
       meta: `${item.category} / ${item.meta}`,
-      gallery: item.gallery?.length ? item.gallery : [item.asset],
+      gallery,
+      galleryTargets: gallery.map((_, imageIndex) => item.gallery?.length ? `${basePath}.gallery.${imageIndex}` : `${basePath}.asset`),
+      titlePath: `${basePath}.title`,
+      descriptionPath: "blog.description",
+      metaPath: `${basePath}.category`,
+      galleryPath: `${basePath}.gallery`,
     };
   }
 
@@ -54,24 +75,37 @@ function resolveDetail(detailId, content) {
     const index = Number(detailId.slice("resume-".length));
     const item = content.resume.items[index];
     if (!item) return null;
+    const basePath = `resume.items.${index}`;
+    const gallery = item.gallery?.length ? item.gallery : [item.asset];
     return {
       type: "Capability",
       marker: item.step,
       title: item.title,
       description: item.description,
       meta: `${content.resume.eyebrow} / ${item.step}`,
-      gallery: item.gallery?.length ? item.gallery : [item.asset],
+      gallery,
+      galleryTargets: gallery.map((_, imageIndex) => item.gallery?.length ? `${basePath}.gallery.${imageIndex}` : `${basePath}.asset`),
+      titlePath: `${basePath}.title`,
+      descriptionPath: `${basePath}.description`,
+      metaPath: "resume.eyebrow",
+      galleryPath: `${basePath}.gallery`,
     };
   }
 
   if (detailId === "about") {
+    const gallery = content.about.gallery?.length ? content.about.gallery : [content.about.image];
     return {
       type: "Profile / Experience",
       marker: "01",
       title: content.about.title,
       description: content.about.bio,
       meta: `${content.about.name} / ${content.about.role}`,
-      gallery: content.about.gallery?.length ? content.about.gallery : [content.about.image],
+      gallery,
+      galleryTargets: gallery.map((_, imageIndex) => content.about.gallery?.length ? `about.gallery.${imageIndex}` : "about.image"),
+      titlePath: "about.title",
+      descriptionPath: "about.bio",
+      metaPath: "about.role",
+      galleryPath: "about.gallery",
     };
   }
 
@@ -81,11 +115,11 @@ function resolveDetail(detailId, content) {
 function DetailLogo({ brand, logoImage }) {
   return (
     <span className="flex min-w-0 items-center gap-3">
-      <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-[4px] border border-white/18 bg-white/7 font-mono text-[10px] font-black text-white">
+      <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-[4px] border border-white/18 bg-white/7 font-mono text-[10px] font-black text-white" data-edit-path="logoImage" data-edit-kind="image" data-edit-label="Logo" data-edit-section="首页">
         {logoImage ? <img className="h-full w-full object-cover" src={logoImage} alt="" /> : "A/P"}
         {!logoImage && <span className="absolute right-1 top-1 size-2 bg-[#e5ff48]" />}
       </span>
-      <span className="max-w-56 truncate text-[14px] font-bold text-[#f1efe4]">{brand}</span>
+      <span className="max-w-56 truncate text-[14px] font-bold text-[#f1efe4]" data-edit-path="brand" data-edit-kind="text" data-edit-label="品牌名称" data-edit-section="首页">{brand}</span>
     </span>
   );
 }
@@ -205,6 +239,11 @@ export default function DetailPage({ detailId, content, onEdit }) {
                       className="block h-auto w-auto max-h-full max-w-full object-contain"
                       src={image}
                       alt={`${detail.title} slide ${index + 1}`}
+                      data-edit-path={detail.galleryTargets?.[index]}
+                      data-edit-kind="image"
+                      data-edit-label={`${detail.title} 图库图片 ${index + 1}`}
+                      data-edit-section="二级页图库"
+                      data-edit-gallery-path={detail.galleryPath}
                     />
                   </div>
                 </figure>
@@ -232,11 +271,11 @@ export default function DetailPage({ detailId, content, onEdit }) {
           <div className="grid border-b border-white/14 lg:grid-cols-[1.18fr_0.82fr]">
             <div className="border-b border-white/14 px-5 py-10 sm:px-8 sm:py-14 lg:border-b-0 lg:border-r lg:px-12 lg:py-[72px]">
               <p className="text-[10px] font-bold uppercase text-[#e5ff48]">{detail.type} / {detail.marker}</p>
-              <h1 className="display-editorial mt-5 max-w-[15ch] text-4xl leading-[0.92] sm:text-6xl lg:text-[78px]">{detail.title}</h1>
+              <h1 className="display-editorial mt-5 max-w-[15ch] text-4xl leading-[0.92] sm:text-6xl lg:text-[78px]" data-edit-path={detail.titlePath} data-edit-kind="text" data-edit-label="二级页标题" data-edit-section="二级页">{detail.title}</h1>
             </div>
             <div className="flex flex-col justify-end px-5 py-10 sm:px-8 sm:py-14 lg:px-12 lg:py-[72px]">
-              <p className="text-[10px] font-bold uppercase text-white/44">{detail.meta}</p>
-              <p className="mt-5 max-w-xl text-sm leading-7 text-white/56">{detail.description}</p>
+              <p className="text-[10px] font-bold uppercase text-white/44" data-edit-path={detail.metaPath} data-edit-kind="text" data-edit-label="二级页分类" data-edit-section="二级页">{detail.meta}</p>
+              <p className="mt-5 max-w-xl text-sm leading-7 text-white/56" data-edit-path={detail.descriptionPath} data-edit-kind="text" data-edit-label="二级页简介" data-edit-section="二级页" data-edit-multiline="true">{detail.description}</p>
             </div>
           </div>
         </div>

@@ -374,6 +374,7 @@ textarea:focus-visible {
 .work-catalog-shade {
   position: absolute;
   inset: 0;
+  pointer-events: none;
   background:
     linear-gradient(180deg, rgb(5 7 8 / 0.34) 0%, transparent 35%),
     linear-gradient(0deg, rgb(5 7 8 / 0.94) 0%, rgb(5 7 8 / 0.2) 52%, transparent 76%);
@@ -534,6 +535,74 @@ textarea:focus-visible {
 
 .editor-surface {
   color: #fff;
+}
+
+.portfolio-editing [data-edit-path] {
+  cursor: crosshair !important;
+}
+
+.portfolio-editing [data-edit-path]:hover {
+  outline: 1px solid rgb(229 255 72 / 0.72);
+  outline-offset: 4px;
+}
+
+.portfolio-editing [data-edit-path]:has([data-edit-path]:hover) {
+  outline: none;
+  box-shadow: none;
+}
+
+.portfolio-editing [data-edit-path].is-editor-selected {
+  outline: 2px solid #e5ff48;
+  outline-offset: 5px;
+  box-shadow: 0 0 0 5px rgb(229 255 72 / 0.1);
+}
+
+.portfolio-editing .work-catalog-track {
+  animation-play-state: paused;
+}
+
+.editor-panel-v2 {
+  color: #fff;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.editor-panel-v2 * {
+  letter-spacing: 0;
+}
+
+.editor-panel-v2 input,
+.editor-panel-v2 textarea,
+.editor-panel-v2 button,
+.editor-panel-v2 summary {
+  font-family: Inter, "Microsoft YaHei", sans-serif;
+}
+
+.editor-panel-v2 [class*="overflow-y-auto"] {
+  scrollbar-color: rgb(255 255 255 / 0.22) transparent;
+  scrollbar-width: thin;
+}
+
+.editor-panel-v2.is-preview-mode {
+  top: auto;
+  height: 126px;
+}
+
+.editor-panel-v2.is-preview-mode .editor-panel-content,
+.editor-panel-v2.is-preview-mode .editor-panel-footer {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  body.portfolio-editing {
+    overflow: hidden;
+  }
+
+  .editor-panel-v2 {
+    inset: 8px;
+    width: auto;
+  }
+
 }
 
 @media (max-width: 767px) {

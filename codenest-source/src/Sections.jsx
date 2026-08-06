@@ -49,12 +49,17 @@ export function ExperienceSection({ content, size }) {
               className="media-zoom absolute inset-x-0 h-full w-full object-cover object-[center_36%] grayscale-[0.18] sm:object-center"
               src={content.image}
               alt={content.name}
+              data-edit-path="about.image"
+              data-edit-kind="image"
+              data-edit-label="人物图片"
+              data-edit-section="关于我"
+              data-edit-gallery-path="about.gallery"
             />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_45%,rgba(4,5,7,0.88)_100%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_45%,rgba(4,5,7,0.88)_100%)]" />
             <div className="absolute inset-x-6 bottom-6 flex items-end justify-between gap-4 sm:inset-x-8 sm:bottom-8">
               <div>
                 <p className="text-[10px] font-bold uppercase text-[#d8d3b8]/62">Based in Shanghai</p>
-                <p className="mt-2 text-sm font-semibold text-white">{content.role}</p>
+                <p className="mt-2 text-sm font-semibold text-white" data-edit-path="about.role" data-edit-kind="text" data-edit-label="身份 / 职位" data-edit-section="关于我">{content.role}</p>
               </div>
               <span className="grid size-12 shrink-0 place-items-center rounded-full border border-white/28 bg-black/28 text-white backdrop-blur-md transition-colors group-hover:bg-[#e5ff48] group-hover:text-[#090a0c]">
                 <ArrowUpRight size={18} />
@@ -64,13 +69,13 @@ export function ExperienceSection({ content, size }) {
 
           <div data-motion-intro className="flex flex-col justify-between lg:py-2">
             <div>
-              <p data-motion-copy className="text-sm font-medium uppercase text-[#e5ff48]">{content.eyebrow}</p>
+              <p data-motion-copy className="text-sm font-medium uppercase text-[#e5ff48]" data-edit-path="about.eyebrow" data-edit-kind="text" data-edit-label="个人介绍小标题" data-edit-section="关于我">{content.eyebrow}</p>
               <div data-motion-heading-wrap className="motion-heading-mask mt-7">
-                <h2 data-motion-heading className="display-editorial max-w-[18ch] text-[44px] leading-[0.96] text-[#f1efe4] sm:text-6xl lg:text-[64px] xl:text-[72px]">
+                <h2 data-motion-heading className="display-editorial max-w-[18ch] text-[44px] leading-[0.96] text-[#f1efe4] sm:text-6xl lg:text-[64px] xl:text-[72px]" data-edit-path="about.title" data-edit-kind="text" data-edit-label="个人介绍标题" data-edit-section="关于我" data-edit-multiline="true">
                   {content.title}
                 </h2>
               </div>
-              <p data-motion-copy className="mt-9 max-w-3xl text-base leading-8 text-[#d0cec2]/66 sm:text-lg sm:leading-9">{content.bio}</p>
+              <p data-motion-copy className="mt-9 max-w-3xl text-base leading-8 text-[#d0cec2]/66 sm:text-lg sm:leading-9" data-edit-path="about.bio" data-edit-kind="text" data-edit-label="个人简介" data-edit-section="关于我" data-edit-multiline="true">{content.bio}</p>
             </div>
 
             <div
@@ -86,22 +91,22 @@ export function ExperienceSection({ content, size }) {
                     index >= 2 ? "border-t sm:border-t-0" : ""
                   } ${index > 0 ? "sm:border-l" : "sm:border-l-0"}`}
                 >
-                  <strong className="display-editorial block whitespace-nowrap text-[38px] font-medium leading-none text-[#f1efe4] sm:text-[40px] xl:text-5xl">{stat.value}</strong>
-                  <span className="mt-4 block max-w-[14ch] text-[9px] font-bold uppercase leading-4 text-[#d0cec2]/46">{stat.label}</span>
+                  <strong className="display-editorial block whitespace-nowrap text-[38px] font-medium leading-none text-[#f1efe4] sm:text-[40px] xl:text-5xl" data-edit-path={`about.stats.${index}.value`} data-edit-kind="text" data-edit-label={`个人数据 ${index + 1} 数值`} data-edit-section="关于我">{stat.value}</strong>
+                  <span className="mt-4 block max-w-[14ch] text-[9px] font-bold uppercase leading-4 text-[#d0cec2]/46" data-edit-path={`about.stats.${index}.label`} data-edit-kind="text" data-edit-label={`个人数据 ${index + 1} 说明`} data-edit-section="关于我">{stat.label}</span>
                 </div>
               ))}
             </div>
 
             <div data-motion-copy className="mt-8 flex min-w-0 flex-wrap items-center gap-x-8 gap-y-4">
-              <a className="cursor-target inline-flex min-w-0 items-center gap-3 break-all text-[13px] font-semibold text-[#f1efe4] hover:text-[#e5ff48] sm:text-sm" href={`mailto:${content.email}`}>
+              <a className="cursor-target inline-flex min-w-0 items-center gap-3 break-all text-[13px] font-semibold text-[#f1efe4] hover:text-[#e5ff48] sm:text-sm" href={`mailto:${content.email}`} data-edit-path="about.email" data-edit-kind="text" data-edit-label="邮箱" data-edit-section="关于我">
                 <Mail className="shrink-0" size={16} /> {content.email}
               </a>
               {content.wechat && (
-                <p className="inline-flex min-w-0 items-center gap-3 text-[13px] text-[#d0cec2]/64 sm:text-sm">
+                <p className="inline-flex min-w-0 items-center gap-3 text-[13px] text-[#d0cec2]/64 sm:text-sm" data-edit-path="about.wechat" data-edit-kind="text" data-edit-label="微信号" data-edit-section="关于我">
                   <MessageCircle className="shrink-0" size={16} /> <span className="min-w-0 break-all">{content.wechat}</span>
                 </p>
               )}
-              <p className="inline-flex min-w-0 items-start gap-3 text-[13px] leading-6 text-[#d0cec2]/52 sm:items-center sm:text-sm">
+              <p className="inline-flex min-w-0 items-start gap-3 text-[13px] leading-6 text-[#d0cec2]/52 sm:items-center sm:text-sm" data-edit-path="about.location" data-edit-kind="text" data-edit-label="地点" data-edit-section="关于我">
                 <MapPin className="mt-1 shrink-0 sm:mt-0" size={16} /> <span className="min-w-0 break-words">{content.location}</span>
               </p>
             </div>
@@ -133,13 +138,18 @@ export function CareerSection({ content, size }) {
                 id="career-title"
                 data-motion-heading
                 className="display-editorial max-w-[16ch] text-[48px] leading-[0.94] text-[#f1efe4] sm:text-6xl lg:text-[72px] xl:text-[82px]"
+                data-edit-path="career.title"
+                data-edit-kind="text"
+                data-edit-label="工作履历标题"
+                data-edit-section="工作履历"
+                data-edit-multiline="true"
               >
                 {content.title}
               </h2>
             </div>
             <div data-motion-copy className="lg:justify-self-end">
-              <p className="text-[10px] font-bold uppercase text-[#e5ff48]">{content.eyebrow}</p>
-              <p className="mt-5 max-w-2xl text-sm leading-7 text-[#cfcdc1]/58 sm:text-base sm:leading-8">
+              <p className="text-[10px] font-bold uppercase text-[#e5ff48]" data-edit-path="career.eyebrow" data-edit-kind="text" data-edit-label="工作履历小标题" data-edit-section="工作履历">{content.eyebrow}</p>
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-[#cfcdc1]/58 sm:text-base sm:leading-8" data-edit-path="career.description" data-edit-kind="text" data-edit-label="工作履历简介" data-edit-section="工作履历" data-edit-multiline="true">
                 {content.description}
               </p>
             </div>
@@ -147,25 +157,29 @@ export function CareerSection({ content, size }) {
         </div>
 
         <div className="mt-8 border-b border-white/14">
-          {content.items.map((item) => (
+          {content.items.map((item, itemIndex) => (
             <article
               key={`${item.index}-${item.company}`}
               data-motion-card
+              data-edit-path={`career.items.${itemIndex}`}
+              data-edit-kind="group"
+              data-edit-label={`${item.company} 工作履历`}
+              data-edit-section="工作履历"
               className="career-row group grid gap-7 border-t border-white/14 py-9 sm:py-10 lg:grid-cols-[0.3fr_0.82fr_1.12fr_1fr] lg:gap-8 lg:py-10 xl:grid-cols-[0.28fr_0.9fr_1.15fr_1.05fr] xl:gap-12"
             >
               <div className="flex items-start justify-between gap-6 lg:flex-col lg:justify-start">
                 <div>
-                  <span className="font-mono text-[10px] font-bold text-[#e5ff48]">{item.index}</span>
-                  <p className="mt-5 font-mono text-[11px] font-semibold uppercase leading-5 text-[#d8d3b8]/58 lg:max-w-[15ch]">
+                  <span className="font-mono text-[10px] font-bold text-[#e5ff48]" data-edit-path={`career.items.${itemIndex}.index`} data-edit-kind="text" data-edit-label="履历序号" data-edit-section="工作履历">{item.index}</span>
+                  <p className="mt-5 font-mono text-[11px] font-semibold uppercase leading-5 text-[#d8d3b8]/58 lg:max-w-[15ch]" data-edit-path={`career.items.${itemIndex}.period`} data-edit-kind="text" data-edit-label="工作时间" data-edit-section="工作履历">
                     {item.period}
                   </p>
                 </div>
                 {item.logo ? (
                   <div className="career-logo-frame mt-0 grid h-[58px] w-[116px] shrink-0 place-items-center overflow-hidden rounded-[4px] border border-white/12 bg-[#f4f4f0] p-1.5 lg:mt-7">
-                    <img className="h-full w-full object-contain" src={item.logo} alt={`${item.company} logo`} />
+                    <img className="h-full w-full object-contain" src={item.logo} alt={`${item.company} logo`} data-edit-path={`career.items.${itemIndex}.logo`} data-edit-kind="image" data-edit-label={`${item.company} Logo`} data-edit-section="工作履历" />
                   </div>
                 ) : (
-                  <div className="career-logo-frame mt-0 grid h-[58px] w-[116px] shrink-0 place-items-center rounded-[4px] border border-white/14 bg-white/[0.035] px-3 text-center font-mono text-[9px] font-bold uppercase text-white/40 lg:mt-7">
+                  <div className="career-logo-frame mt-0 grid h-[58px] w-[116px] shrink-0 place-items-center rounded-[4px] border border-white/14 bg-white/[0.035] px-3 text-center font-mono text-[9px] font-bold uppercase text-white/40 lg:mt-7" data-edit-path={`career.items.${itemIndex}.logo`} data-edit-kind="image" data-edit-label={`${item.company} Logo`} data-edit-section="工作履历">
                     {item.company.slice(0, 8)}
                   </div>
                 )}
@@ -173,27 +187,27 @@ export function CareerSection({ content, size }) {
 
               <div>
                 <p className="text-[10px] font-bold uppercase text-white/34">Company / Role</p>
-                <h3 className="mt-4 max-w-[19ch] text-[25px] font-semibold leading-[1.18] text-[#f1efe4] transition-colors duration-300 group-hover:text-white sm:text-[30px]">
+                <h3 className="mt-4 max-w-[19ch] text-[25px] font-semibold leading-[1.18] text-[#f1efe4] transition-colors duration-300 group-hover:text-white sm:text-[30px]" data-edit-path={`career.items.${itemIndex}.company`} data-edit-kind="text" data-edit-label="公司名称" data-edit-section="工作履历">
                   {item.company}
                 </h3>
-                <p className="mt-4 max-w-[30ch] text-xs font-semibold leading-6 text-[#e5ff48]/78">{item.meta}</p>
+                <p className="mt-4 max-w-[30ch] text-xs font-semibold leading-6 text-[#e5ff48]/78" data-edit-path={`career.items.${itemIndex}.meta`} data-edit-kind="text" data-edit-label="公司性质 / 职位" data-edit-section="工作履历">{item.meta}</p>
               </div>
 
               <div className="career-detail-zone lg:col-span-2">
                 <div className="grid gap-7 lg:grid-cols-[1.08fr_1fr] lg:gap-8 xl:gap-12">
                   <div>
                     <p className="text-[10px] font-bold uppercase text-white/34">Responsibilities</p>
-                    <p className="mt-4 max-w-[52ch] text-sm leading-7 text-[#cfcdc1]/62 sm:text-[15px] sm:leading-8">
+                    <p className="mt-4 max-w-[52ch] text-sm leading-7 text-[#cfcdc1]/62 sm:text-[15px] sm:leading-8" data-edit-path={`career.items.${itemIndex}.responsibilities`} data-edit-kind="text" data-edit-label="工作内容" data-edit-section="工作履历" data-edit-multiline="true">
                       {item.responsibilities}
                     </p>
                   </div>
 
                   <div className="border-t border-white/12 pt-7 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 xl:pl-10">
                     <p className="text-[10px] font-bold uppercase text-[#e5ff48]">Major Project</p>
-                    <h4 className="mt-4 max-w-[24ch] text-lg font-semibold leading-7 text-[#f1efe4] sm:text-xl">
+                    <h4 className="mt-4 max-w-[24ch] text-lg font-semibold leading-7 text-[#f1efe4] sm:text-xl" data-edit-path={`career.items.${itemIndex}.projectTitle`} data-edit-kind="text" data-edit-label="重点项目名称" data-edit-section="工作履历">
                       {item.projectTitle}
                     </h4>
-                    <p className="mt-4 max-w-[48ch] text-sm leading-7 text-[#cfcdc1]/52">{item.projectDescription}</p>
+                    <p className="mt-4 max-w-[48ch] text-sm leading-7 text-[#cfcdc1]/52" data-edit-path={`career.items.${itemIndex}.projectDescription`} data-edit-kind="text" data-edit-label="重点项目介绍" data-edit-section="工作履历" data-edit-multiline="true">{item.projectDescription}</p>
                   </div>
                 </div>
 
@@ -205,7 +219,7 @@ export function CareerSection({ content, size }) {
                     </summary>
                     <div className="career-more-content">
                       <div className="overflow-hidden">
-                        <p className="max-w-[92ch] pb-2 pt-4 text-sm leading-7 text-[#cfcdc1]/58 sm:text-[15px] sm:leading-8">
+                        <p className="max-w-[92ch] pb-2 pt-4 text-sm leading-7 text-[#cfcdc1]/58 sm:text-[15px] sm:leading-8" data-edit-path={`career.items.${itemIndex}.moreDetails`} data-edit-kind="text" data-edit-label="更多工作信息" data-edit-section="工作履历" data-edit-multiline="true">
                           {item.moreDetails}
                         </p>
                       </div>
@@ -227,22 +241,26 @@ function CatalogCard({ item, index, duplicate = false }) {
       <a
         className="cursor-target work-catalog-card group"
         href={detailHref(`catalog-${index}`)}
+        data-edit-path={`projects.catalogItems.${index}`}
+        data-edit-kind="group"
+        data-edit-label={`${item.title} 内容组`}
+        data-edit-section="优秀作品"
         aria-label={`Open ${item.title} gallery`}
         aria-hidden={duplicate || undefined}
         tabIndex={duplicate ? -1 : undefined}
         onClick={rememberHomeScrollPosition}
       >
-        <img className="work-catalog-image" src={item.image} alt={duplicate ? "" : item.title} />
+        <img className="work-catalog-image" src={item.image} alt={duplicate ? "" : item.title} data-edit-path={`projects.catalogItems.${index}.image`} data-edit-kind="image" data-edit-label={`${item.title} 封面`} data-edit-section="优秀作品" data-edit-gallery-path={`projects.catalogItems.${index}.gallery`} />
         <div className="work-catalog-shade" aria-hidden="true" />
         <div className="absolute inset-x-5 top-5 z-10 flex items-center justify-between gap-4 text-[9px] font-bold uppercase text-white/72 sm:inset-x-6 sm:top-6">
-          <span>{item.index} / {item.category}</span>
+          <span data-edit-path={`projects.catalogItems.${index}.category`} data-edit-kind="text" data-edit-label={`${item.title} 分类`} data-edit-section="优秀作品">{item.index} / {item.category}</span>
           <ArrowUpRight className="transition-transform duration-500 group-hover:rotate-45" size={16} />
         </div>
         <div className="absolute inset-x-5 bottom-5 z-10 sm:inset-x-6 sm:bottom-6">
-          <h3 className="display-editorial max-w-[12ch] text-[28px] leading-[0.98] text-white sm:text-[34px]">
+          <h3 className="display-editorial max-w-[12ch] text-[28px] leading-[0.98] text-white sm:text-[34px]" data-edit-path={`projects.catalogItems.${index}.title`} data-edit-kind="text" data-edit-label="作品标题" data-edit-section="优秀作品">
             {item.title}
           </h3>
-          <p className="work-catalog-description mt-4 max-w-[34ch] text-xs leading-6 text-white/64">
+          <p className="work-catalog-description mt-4 max-w-[34ch] text-xs leading-6 text-white/64" data-edit-path={`projects.catalogItems.${index}.description`} data-edit-kind="text" data-edit-label="作品简介" data-edit-section="优秀作品" data-edit-multiline="true">
             {item.description}
           </p>
         </div>
@@ -276,13 +294,13 @@ export function ProjectsSection({ content, size }) {
           </div>
           <div className="mt-10 grid gap-8 lg:grid-cols-[1.12fr_0.88fr] lg:items-end lg:gap-16">
             <div data-motion-heading-wrap className="motion-heading-mask">
-              <h2 data-motion-heading className="display-editorial max-w-[14ch] text-[48px] leading-[0.94] sm:text-6xl lg:text-[74px] xl:text-[84px]">
+              <h2 data-motion-heading className="display-editorial max-w-[14ch] text-[48px] leading-[0.94] sm:text-6xl lg:text-[74px] xl:text-[84px]" data-edit-path="projects.title" data-edit-kind="text" data-edit-label="优秀作品标题" data-edit-section="优秀作品" data-edit-multiline="true">
                 {content.title}
               </h2>
             </div>
             <div data-motion-copy className="lg:justify-self-end">
               <p className="text-[10px] font-bold uppercase text-[#e5ff48]">Click a work to explore</p>
-              <p className="mt-5 max-w-2xl text-sm leading-7 text-[#cfcdc1]/58 sm:text-base sm:leading-8">{content.description}</p>
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-[#cfcdc1]/58 sm:text-base sm:leading-8" data-edit-path="projects.description" data-edit-kind="text" data-edit-label="优秀作品简介" data-edit-section="优秀作品" data-edit-multiline="true">{content.description}</p>
             </div>
           </div>
         </div>
@@ -332,9 +350,9 @@ export function StrengthsSection({ content, capabilities, size }) {
           </div>
           <div className="mt-12 grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end lg:gap-16">
             <div data-motion-heading-wrap className="motion-heading-mask">
-              <h2 data-motion-heading className="display-editorial max-w-[14ch] text-[46px] leading-[0.95] sm:text-7xl lg:text-[76px] xl:text-[88px]">{content.title}</h2>
+              <h2 data-motion-heading className="display-editorial max-w-[14ch] text-[46px] leading-[0.95] sm:text-7xl lg:text-[76px] xl:text-[88px]" data-edit-path="blog.title" data-edit-kind="text" data-edit-label="个人优势标题" data-edit-section="个人优势" data-edit-multiline="true">{content.title}</h2>
             </div>
-            <p data-motion-copy className="max-w-2xl text-sm leading-7 text-[#cfcdc1]/58 sm:text-base sm:leading-8 lg:justify-self-end">{content.description}</p>
+            <p data-motion-copy className="max-w-2xl text-sm leading-7 text-[#cfcdc1]/58 sm:text-base sm:leading-8 lg:justify-self-end" data-edit-path="blog.description" data-edit-kind="text" data-edit-label="个人优势简介" data-edit-section="个人优势" data-edit-multiline="true">{content.description}</p>
           </div>
         </div>
 
@@ -343,22 +361,26 @@ export function StrengthsSection({ content, capabilities, size }) {
             <a
               key={`${item.category}-${item.title}`}
               data-motion-card
+              data-edit-path={`blog.items.${index}`}
+              data-edit-kind="group"
+              data-edit-label={`${item.title} 内容组`}
+              data-edit-section="个人优势"
               className="cursor-target specular-frame specular-frame--quiet group relative block min-h-[400px] overflow-hidden rounded-[6px] border border-white/10 bg-[#14161a] sm:min-h-[470px]"
               href={detailHref(`blog-${index}`)}
               onClick={rememberHomeScrollPosition}
               onPointerMove={steerSpecularEdge}
               onPointerLeave={resetSpecularEdge}
             >
-              <img data-parallax className="media-zoom absolute inset-x-0 h-full w-full object-cover opacity-55 grayscale-[0.28]" src={item.asset} alt={item.title} />
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,8,10,0.15),rgba(7,8,10,0.92))]" />
+              <img data-parallax className="media-zoom absolute inset-x-0 h-full w-full object-cover opacity-55 grayscale-[0.28]" src={item.asset} alt={item.title} data-edit-path={`blog.items.${index}.asset`} data-edit-kind="image" data-edit-label={`${item.title} 封面`} data-edit-section="个人优势" data-edit-gallery-path={`blog.items.${index}.gallery`} />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,8,10,0.15),rgba(7,8,10,0.92))]" />
               <div className="absolute inset-6 flex flex-col justify-between sm:inset-8">
                 <div className="flex items-center justify-between text-[10px] font-bold uppercase text-white/52">
-                  <span>{item.category}</span>
+                  <span data-edit-path={`blog.items.${index}.category`} data-edit-kind="text" data-edit-label="优势分类" data-edit-section="个人优势">{item.category}</span>
                   <ArrowUpRight className="transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" size={18} />
                 </div>
                 <div>
-                  <h3 className="display-editorial text-4xl leading-[0.98] text-white sm:text-5xl">{item.title}</h3>
-                  <p className="mt-4 text-xs font-semibold uppercase text-[#e5ff48]">{item.meta}</p>
+                  <h3 className="display-editorial text-4xl leading-[0.98] text-white sm:text-5xl" data-edit-path={`blog.items.${index}.title`} data-edit-kind="text" data-edit-label="优势标题" data-edit-section="个人优势">{item.title}</h3>
+                  <p className="mt-4 text-xs font-semibold uppercase text-[#e5ff48]" data-edit-path={`blog.items.${index}.meta`} data-edit-kind="text" data-edit-label="优势副标签" data-edit-section="个人优势">{item.meta}</p>
                 </div>
               </div>
             </a>
@@ -368,12 +390,12 @@ export function StrengthsSection({ content, capabilities, size }) {
         <div data-motion-subsection className="mt-14 sm:mt-20 lg:mt-28">
           <div data-motion-header className="flex flex-col gap-5 border-b border-white/14 pb-7 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p data-motion-label className="text-[10px] font-bold uppercase text-[#e5ff48]">{capabilities.eyebrow}</p>
+              <p data-motion-label className="text-[10px] font-bold uppercase text-[#e5ff48]" data-edit-path="resume.eyebrow" data-edit-kind="text" data-edit-label="能力列表小标题" data-edit-section="个人优势">{capabilities.eyebrow}</p>
               <div data-motion-heading-wrap className="motion-heading-mask mt-4">
-                <h3 data-motion-heading className="display-editorial max-w-[16ch] text-4xl leading-[0.96] text-[#f0eee3] sm:text-6xl">{capabilities.title}</h3>
+                <h3 data-motion-heading className="display-editorial max-w-[16ch] text-4xl leading-[0.96] text-[#f0eee3] sm:text-6xl" data-edit-path="resume.title" data-edit-kind="text" data-edit-label="能力列表标题" data-edit-section="个人优势" data-edit-multiline="true">{capabilities.title}</h3>
               </div>
             </div>
-            <p data-motion-copy className="max-w-xl text-sm leading-7 text-[#cfcdc1]/52">{capabilities.description}</p>
+            <p data-motion-copy className="max-w-xl text-sm leading-7 text-[#cfcdc1]/52" data-edit-path="resume.description" data-edit-kind="text" data-edit-label="能力列表简介" data-edit-section="个人优势" data-edit-multiline="true">{capabilities.description}</p>
           </div>
 
           <div
@@ -386,16 +408,20 @@ export function StrengthsSection({ content, capabilities, size }) {
               <a
                 key={item.step}
                 data-motion-card
+                data-edit-path={`resume.items.${index}`}
+                data-edit-kind="group"
+                data-edit-label={`${item.title} 内容组`}
+                data-edit-section="个人优势"
                 className={`cursor-target group min-h-[220px] border-white/12 p-5 transition-colors hover:bg-[#11141a] sm:min-h-[300px] sm:p-8 ${index % 4 ? "lg:border-l" : ""} ${index >= 4 ? "border-t" : ""} ${index % 2 ? "sm:border-l" : ""}`}
                 href={detailHref(`resume-${index}`)}
                 onClick={rememberHomeScrollPosition}
               >
                 <div className="flex items-center justify-between text-[10px] font-bold text-white/40">
-                  <span>{item.step}</span>
+                  <span data-edit-path={`resume.items.${index}.step`} data-edit-kind="text" data-edit-label="能力序号" data-edit-section="个人优势">{item.step}</span>
                   <ArrowUpRight className="opacity-0 transition-opacity group-hover:opacity-100" size={16} />
                 </div>
-                <h4 className="display-editorial mt-10 text-3xl leading-none text-[#efede1] sm:mt-16">{item.title}</h4>
-                <p className="mt-5 text-sm leading-7 text-[#cfcdc1]/48">{item.description}</p>
+                <h4 className="display-editorial mt-10 text-3xl leading-none text-[#efede1] sm:mt-16" data-edit-path={`resume.items.${index}.title`} data-edit-kind="text" data-edit-label="能力标题" data-edit-section="个人优势">{item.title}</h4>
+                <p className="mt-5 text-sm leading-7 text-[#cfcdc1]/48" data-edit-path={`resume.items.${index}.description`} data-edit-kind="text" data-edit-label="能力描述" data-edit-section="个人优势" data-edit-multiline="true">{item.description}</p>
               </a>
             ))}
           </div>
@@ -433,16 +459,20 @@ export function ContactSection({ content }) {
 
         <div data-motion-copy className="mt-14 grid gap-8 border-t border-white/16 pt-8 lg:mt-20 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <p className="max-w-2xl text-sm leading-7 text-[#cfcdc1]/52 sm:text-base">{content.bio}</p>
+            <p className="max-w-2xl text-sm leading-7 text-[#cfcdc1]/52 sm:text-base" data-edit-path="about.bio" data-edit-kind="text" data-edit-label="联系页简介" data-edit-section="联系方式" data-edit-multiline="true">{content.bio}</p>
             <div className="mt-8 flex flex-col gap-3 text-sm sm:flex-row sm:flex-wrap sm:gap-8">
-              <p>{content.location}</p>
-              <p>{content.role}</p>
-              {content.wechat && <p>WeChat · {content.wechat}</p>}
+              <p data-edit-path="about.location" data-edit-kind="text" data-edit-label="地点" data-edit-section="联系方式">{content.location}</p>
+              <p data-edit-path="about.role" data-edit-kind="text" data-edit-label="身份 / 职位" data-edit-section="联系方式">{content.role}</p>
+              {content.wechat && <p data-edit-path="about.wechat" data-edit-kind="text" data-edit-label="微信号" data-edit-section="联系方式">WeChat · {content.wechat}</p>}
             </div>
           </div>
           <a
             className="cursor-target group inline-flex min-h-16 w-fit items-center gap-5 rounded-full bg-[#e5ff48] px-7 text-sm font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-1"
             href={`mailto:${content.email}`}
+            data-edit-path="about.email"
+            data-edit-kind="text"
+            data-edit-label="邮箱"
+            data-edit-section="联系方式"
           >
             Contact me
             <span className="grid size-10 place-items-center rounded-full bg-[#090a0c] text-white transition-transform group-hover:rotate-45">
@@ -452,7 +482,7 @@ export function ContactSection({ content }) {
         </div>
 
         <footer data-motion-copy className="mt-16 flex flex-col gap-4 border-t border-white/10 pt-6 text-[10px] font-bold uppercase text-white/34 sm:flex-row sm:items-center sm:justify-between">
-          <span>{content.name} / Portfolio 2026</span>
+          <span data-edit-path="about.name" data-edit-kind="text" data-edit-label="姓名" data-edit-section="关于我">{content.name} / Portfolio 2026</span>
           <a className="cursor-target inline-flex items-center gap-2 text-white/52 hover:text-[#e5ff48]" href="#top">
             Back to top <ArrowUpRight size={14} />
           </a>
