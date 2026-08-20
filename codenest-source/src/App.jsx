@@ -21,17 +21,20 @@ import { CONTENT_STORAGE_KEY, DEFAULT_CONTENT } from "./content";
 import ContentEditorV2 from "./ContentEditorV2";
 import {
   clearEditorDraft,
+  applyEditableLayoutOffsets,
   contentSnapshot,
   getContentValue,
   imagePathArea,
   imageRequirement,
+  layoutBreakpoint,
+  layoutOffset,
   normalizeEditTarget,
   readEditorDraft,
   setContentValue,
   targetFromElement,
   writeEditorDraft,
 } from "./editorUtils";
-import { CareerSection, ContactSection, ExperienceSection, ProjectsSection, StrengthsSection } from "./Sections";
+import { CareerSection, ContactSection, ExperienceSection, LatestCasesSection, ProjectsSection, ProjectsShowcasePreview, StrengthsSection, VisualGallerySection } from "./Sections";
 import { setupHomeAnimations, shouldPlayOpening } from "./animations";
 import DetailPage from "./DetailPage";
 import Galaxy from "./Galaxy";
@@ -49,6 +52,7 @@ import {
   signOutAdmin,
   subscribeAdminSession,
   uploadPortfolioImage,
+  uploadPortfolioFile,
 } from "./supabase";
 
 const navTargets = [
@@ -165,13 +169,69 @@ function mergeItems(defaults, incoming = [], legacyTitles = []) {
 }
 
 function migratedText(value, legacyValues, fallback) {
-  return legacyValues.includes(value) || !value ? fallback : value;
+  if (value === undefined || value === null || legacyValues.includes(value)) return fallback;
+  return value;
+}
+
+function sectionProjectSnapshot(item, projectIndex) {
+  return {
+    projectIndex,
+    index: item.index,
+    category: item.category,
+    title: item.title,
+    description: item.description,
+    image: item.image,
+  };
+}
+
+function mergeIndependentSectionItems(defaults, incoming) {
+  const source = Array.isArray(incoming) ? incoming : [];
+  return defaults.map((item, index) => ({
+    ...item,
+    ...(source[index] || {}),
+    projectIndex: Number.isInteger(Number(source[index]?.projectIndex))
+      ? Number(source[index].projectIndex)
+      : item.projectIndex,
+  }));
+}
+
+function defaultLatestItems() {
+  return DEFAULT_CONTENT.projects.catalogItems
+    .slice(0, 3)
+    .map((item, projectIndex) => sectionProjectSnapshot(item, projectIndex));
+}
+
+function defaultVisualItems() {
+  return DEFAULT_CONTENT.projects.catalogItems.flatMap((item, projectIndex) => {
+    const images = item.gallery?.length ? item.gallery : [item.image];
+    return images.filter(Boolean).map((image) => ({
+      ...sectionProjectSnapshot(item, projectIndex),
+      image,
+    }));
+  });
+}
+
+function defaultContactItems() {
+  const items = DEFAULT_CONTENT.projects.catalogItems;
+  if (!items.length) return [];
+  return Array.from({ length: 7 }, (_, index) => {
+    const projectIndex = index % items.length;
+    return sectionProjectSnapshot(items[projectIndex], projectIndex);
+  });
 }
 
 function mergeContent(value = {}) {
   const incomingAboutSize = Number(value.sectionSizes?.about);
   const incomingCareerSize = Number(value.sectionSizes?.career);
   const incomingProjectsSize = Number(value.sectionSizes?.projects);
+  const catalogItems = DEFAULT_CONTENT.projects.catalogItems.map((item, index) => ({
+    ...item,
+    ...(Array.isArray(value.projects?.catalogItems) ? value.projects.catalogItems[index] : {}),
+    gallery:
+      Array.isArray(value.projects?.catalogItems?.[index]?.gallery) && value.projects.catalogItems[index].gallery.length
+        ? value.projects.catalogItems[index].gallery
+        : item.gallery,
+  }));
 
   return {
     ...DEFAULT_CONTENT,
@@ -199,12 +259,12 @@ function mergeContent(value = {}) {
     navigation: {
       ...DEFAULT_CONTENT.navigation,
       ...(value.navigation || {}),
-      home: value.navigation?.home?.trim() || DEFAULT_CONTENT.navigation.home,
+      home: value.navigation?.home ?? DEFAULT_CONTENT.navigation.home,
       projects: migratedText(value.navigation?.projects, ["PROJECTS", "工作介绍", "精选项目", "工作目录"], DEFAULT_CONTENT.navigation.projects),
       blog: migratedText(value.navigation?.blog, ["BLOG", "工作内容"], DEFAULT_CONTENT.navigation.blog),
       resume: migratedText(value.navigation?.resume, ["RESUME", "其他"], DEFAULT_CONTENT.navigation.resume),
       about: migratedText(value.navigation?.about, ["ABOUT", "个人资料"], DEFAULT_CONTENT.navigation.about),
-      career: value.navigation?.career?.trim() || DEFAULT_CONTENT.navigation.career,
+      career: value.navigation?.career ?? DEFAULT_CONTENT.navigation.career,
     },
     sectionSizes: {
       ...DEFAULT_CONTENT.sectionSizes,
@@ -219,6 +279,10 @@ function mergeContent(value = {}) {
           : Math.min(80, Math.max(50, incomingAboutSize || DEFAULT_CONTENT.sectionSizes.about)),
       career: Math.min(190, Math.max(115, incomingCareerSize || DEFAULT_CONTENT.sectionSizes.career)),
     },
+    layoutOffsets: value.layoutOffsets && typeof value.layoutOffsets === "object" ? value.layoutOffsets : {},
+    styleOverrides: value.styleOverrides && typeof value.styleOverrides === "object" ? value.styleOverrides : {},
+    textOverrides: value.textOverrides && typeof value.textOverrides === "object" ? value.textOverrides : {},
+    customFonts: Array.isArray(value.customFonts) ? value.customFonts : [],
     career: {
       ...DEFAULT_CONTENT.career,
       ...(value.career || {}),
@@ -245,13 +309,13 @@ function mergeContent(value = {}) {
         ],
         DEFAULT_CONTENT.projects.description,
       ),
-      catalogItems: DEFAULT_CONTENT.projects.catalogItems.map((item, index) => ({
+      catalogItems,
+      latestItems: mergeIndependentSectionItems(defaultLatestItems(), value.projects?.latestItems),
+      visualItems: mergeIndependentSectionItems(defaultVisualItems(), value.projects?.visualItems),
+      contactItems: mergeIndependentSectionItems(defaultContactItems(), value.projects?.contactItems),
+      mosaicItems: DEFAULT_CONTENT.projects.mosaicItems.map((item, index) => ({
         ...item,
-        ...(Array.isArray(value.projects?.catalogItems) ? value.projects.catalogItems[index] : {}),
-        gallery:
-          Array.isArray(value.projects?.catalogItems?.[index]?.gallery) && value.projects.catalogItems[index].gallery.length
-            ? value.projects.catalogItems[index].gallery
-            : item.gallery,
+        ...(Array.isArray(value.projects?.mosaicItems) ? value.projects.mosaicItems[index] : {}),
       })),
       items: mergeItems(DEFAULT_CONTENT.projects.items, value.projects?.items, LEGACY_PROJECT_TITLES),
     },
@@ -549,6 +613,8 @@ function BackgroundMedia({ content }) {
 function HeroSceneBackground({ content, activeScene }) {
   const reducedMotion = useReducedMotion();
   const videoRefs = useRef([]);
+  const pauseTimerRef = useRef(null);
+  const [displayedScene, setDisplayedScene] = useState(activeScene);
   const hasSceneMode = content.mediaMode === "video" && !content.videoUrl?.includes(".m3u8");
   const firstSource = content.videoUrl && content.videoUrl !== LEGACY_HERO_VIDEO_URL
     ? content.videoUrl
@@ -557,17 +623,46 @@ function HeroSceneBackground({ content, activeScene }) {
 
   useEffect(() => {
     if (!hasSceneMode || reducedMotion) return undefined;
-    const activeVideo = videoRefs.current[activeScene];
-    activeVideo?.play().catch(() => undefined);
+    let cancelled = false;
+    const targetVideo = videoRefs.current[activeScene];
+    if (!targetVideo) return undefined;
 
-    const pauseTimer = window.setTimeout(() => {
-      videoRefs.current.forEach((video, index) => {
-        if (video && index !== activeScene) video.pause();
-      });
-    }, 1050);
+    targetVideo.preload = "auto";
+    if (targetVideo.networkState === HTMLMediaElement.NETWORK_EMPTY) targetVideo.load();
 
-    return () => window.clearTimeout(pauseTimer);
+    const revealWhenPlaying = async () => {
+      try {
+        await targetVideo.play();
+        if (cancelled) return;
+        setDisplayedScene(activeScene);
+        window.clearTimeout(pauseTimerRef.current);
+        pauseTimerRef.current = window.setTimeout(() => {
+          videoRefs.current.forEach((video, index) => {
+            if (video && index !== activeScene) video.pause();
+          });
+        }, 1100);
+      } catch {
+        // Keep the current scene visible if the next file cannot start yet.
+      }
+    };
+
+    revealWhenPlaying();
+    return () => {
+      cancelled = true;
+    };
   }, [activeScene, hasSceneMode, reducedMotion]);
+
+  useEffect(() => {
+    if (!hasSceneMode || reducedMotion) return undefined;
+    const nextIndex = (displayedScene + 1) % scenes.length;
+    const nextVideo = videoRefs.current[nextIndex];
+    if (!nextVideo) return undefined;
+    nextVideo.preload = "auto";
+    if (nextVideo.networkState === HTMLMediaElement.NETWORK_EMPTY) nextVideo.load();
+    return undefined;
+  }, [displayedScene, hasSceneMode, reducedMotion, scenes.length]);
+
+  useEffect(() => () => window.clearTimeout(pauseTimerRef.current), []);
 
   if (!hasSceneMode) {
     return (
@@ -592,10 +687,10 @@ function HeroSceneBackground({ content, activeScene }) {
         <video
           key={scene.source}
           ref={(node) => { videoRefs.current[index] = node; }}
-          className={`hero-scene-video absolute inset-0 h-full w-full object-cover ${activeScene === index ? "is-active" : ""}`}
+          className={`hero-scene-video absolute inset-0 h-full w-full object-cover ${displayedScene === index ? "is-active" : ""}`}
           src={scene.source}
           poster={content.backgroundImage || DEFAULT_CONTENT.backgroundImage}
-          preload={index === activeScene ? "auto" : "metadata"}
+          preload={index === displayedScene || index === (displayedScene + 1) % scenes.length ? "auto" : "metadata"}
           autoPlay={index === 0}
           muted
           loop
@@ -645,7 +740,7 @@ function PortfolioSidebar({ navigation }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const labels = sidebarTargets.map((target) =>
-    target.label || navigation?.[target.key]?.trim() || DEFAULT_CONTENT.navigation[target.key],
+    target.label ?? navigation?.[target.key] ?? DEFAULT_CONTENT.navigation[target.key],
   );
 
   useEffect(() => {
@@ -693,6 +788,7 @@ function PortfolioSidebar({ navigation }) {
     <aside
       ref={sidebarRef}
       className={`portfolio-sidebar-shell${isSidebarOpen ? " is-open" : ""}`}
+      tabIndex={0}
       aria-label="Portfolio sections"
       title="展开侧边导航"
       onPointerEnter={() => setIsSidebarOpen(true)}
@@ -710,7 +806,7 @@ function PortfolioSidebar({ navigation }) {
 function Navigation({ brand, logoImage, navigation, isOpen, onToggle, onClose, onEdit }) {
   const items = navTargets.map((item) => ({
     ...item,
-    label: navigation?.[item.key]?.trim() || DEFAULT_CONTENT.navigation[item.key],
+    label: navigation?.[item.key] ?? DEFAULT_CONTENT.navigation[item.key],
   }));
 
   useEffect(() => {
@@ -1351,6 +1447,7 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
                   <EditorGroup title="优秀作品">
                     <Field label="小标题" value={draft.projects.eyebrow} onChange={(event) => updateSection("projects", "eyebrow", event.target.value)} />
                     <Field label="标题" value={draft.projects.title} multiline onChange={(event) => updateSection("projects", "title", event.target.value)} />
+                    <Field label="中文翻译" value={draft.projects.subtitle || ""} onChange={(event) => updateSection("projects", "subtitle", event.target.value)} />
                     <Field label="描述文字" value={draft.projects.description} multiline onChange={(event) => updateSection("projects", "description", event.target.value)} />
                     {draft.projects.catalogItems.map((item, index) => (
                       <div key={`${item.index}-${index}`} className="space-y-4 border-t border-white/10 pt-4">
@@ -1607,7 +1704,11 @@ function ContentEditor({ content, session, cloudStatus, onSignIn, onSignOut, onS
 }
 
 function App() {
-  const [detailId, setDetailId] = useState(() => new URLSearchParams(window.location.search).get("detail"));
+  const initialSearchParams = new URLSearchParams(window.location.search);
+  const [detailId, setDetailId] = useState(() => initialSearchParams.get("detail"));
+  const isLightTheme = initialSearchParams.get("theme") !== "dark";
+  const isShowcasePreview = initialSearchParams.get("showcase") !== "classic";
+  const isStudioPersonaPreview = initialSearchParams.get("persona") !== "original";
   const pageRef = useRef(null);
   const playOpeningRef = useRef(shouldPlayOpening());
   const sceneTransitionTimerRef = useRef(null);
@@ -1624,15 +1725,23 @@ function App() {
   const [previewOverrides, setPreviewOverrides] = useState({});
   const [uploadStates, setUploadStates] = useState({});
   const [session, setSession] = useState(null);
+  const [isEditorUnlocked, setIsEditorUnlocked] = useState(false);
   const [cloudStatus, setCloudStatus] = useState("connecting");
   const [isContentReady, setIsContentReady] = useState(false);
   const hasEditedDraftRef = useRef(false);
   const lastDraftChangeRef = useRef({ key: "", time: 0 });
   const previewObjectUrlsRef = useRef(new Set());
+  const dragLayoutRef = useRef(null);
   const openEditor = useCallback(() => {
     setIsEditorOpen(true);
     setEditorMode("edit");
-  }, []);
+    if (session) setIsEditorUnlocked(true);
+  }, [session]);
+
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle("portfolio-light-document", isLightTheme);
+    return () => document.documentElement.classList.remove("portfolio-light-document");
+  }, [isLightTheme]);
 
   const handleRouteNavigation = useCallback(({ href, historyMode = "push" }) => {
     const destination = new URL(href, window.location.href);
@@ -1643,6 +1752,9 @@ function App() {
     }
 
     setDetailId(nextDetailId);
+    setIsEditorOpen(false);
+    setIsEditorUnlocked(false);
+    setSelectedEditTarget(null);
     if (nextDetailId) window.scrollTo({ top: 0, behavior: "auto" });
   }, []);
 
@@ -1651,13 +1763,23 @@ function App() {
     () => contentSnapshot(draftContent) !== contentSnapshot(content),
     [content, draftContent],
   );
-  const renderedContent = useMemo(
-    () => Object.entries(previewOverrides).reduce(
+  const renderedContent = useMemo(() => {
+    const previewContent = Object.entries(previewOverrides).reduce(
       (current, [path, value]) => setContentValue(current, path, value),
       draftContent,
-    ),
-    [draftContent, previewOverrides],
-  );
+    );
+
+    if (!isStudioPersonaPreview) return previewContent;
+
+    return {
+      ...previewContent,
+      about: {
+        ...previewContent.about,
+        image: "/portfolio/concept/anthony-blue-studio-books.png",
+        imageFocus: "50% 28%",
+      },
+    };
+  }, [draftContent, isStudioPersonaPreview, previewOverrides]);
   const canUndoDraft = draftHistory.index > 0;
   const canRedoDraft = draftHistory.index >= 0 && draftHistory.index < draftHistory.entries.length - 1;
 
@@ -1763,33 +1885,199 @@ function App() {
   }, [draftContent, hasDraftChanges]);
 
   useEffect(() => {
-    document.body.classList.toggle("portfolio-editing", isEditorOpen && editorMode === "edit");
-    document.body.classList.toggle("portfolio-editor-preview", isEditorOpen && editorMode === "preview");
+    const canEditPage = Boolean(session && isEditorUnlocked && isEditorOpen && editorMode === "edit");
+    document.body.classList.toggle("portfolio-editing", canEditPage);
+    document.body.classList.toggle("portfolio-editor-preview", Boolean(session && isEditorUnlocked && isEditorOpen && editorMode === "preview"));
 
     const handleEditableClick = (event) => {
-      if (!isEditorOpen || editorMode !== "edit" || event.target.closest("[data-editor-panel]")) return;
+      if (!canEditPage || event.target.closest("[data-editor-panel]")) return;
       const editable = event.target.closest("[data-edit-path]");
+      if (!editable) return;
+      const selected = targetFromElement(editable);
+      event.preventDefault();
+      event.stopPropagation();
+      setSelectedEditTarget(selected);
+    };
+
+    const handleEditableDoubleClick = (event) => {
+      if (!canEditPage || event.target.closest("[data-editor-panel]")) return;
+      const editable = event.target.closest("[data-edit-path][data-edit-kind='text']");
       if (!editable) return;
       event.preventDefault();
       event.stopPropagation();
-      setSelectedEditTarget(targetFromElement(editable));
+      const target = targetFromElement(editable);
+      const protectedChildren = target.autoText
+        ? [...editable.children].map((child) => ({ child, value: child.getAttribute("contenteditable") }))
+        : [];
+      protectedChildren.forEach(({ child }) => child.setAttribute("contenteditable", "false"));
+      editable.contentEditable = "true";
+      editable.spellcheck = false;
+      editable.classList.add("is-inline-editing");
+      editable.focus({ preventScroll: true });
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(editable);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      const finish = () => {
+        editable.contentEditable = "false";
+        editable.classList.remove("is-inline-editing");
+        editable.removeEventListener("blur", finish);
+        editable.removeEventListener("keydown", handleInlineKeyDown);
+        protectedChildren.forEach(({ child, value }) => {
+          if (value === null) child.removeAttribute("contenteditable");
+          else child.setAttribute("contenteditable", value);
+        });
+        const nextValue = target.autoText
+          ? [...editable.childNodes]
+              .filter((node) => node.nodeType === 3)
+              .map((node) => node.nodeValue || "")
+              .join(" ")
+              .replace(/\s+/g, " ")
+              .trim()
+          : editable.innerText.trim();
+        const storedValue = getContentValue(draftContent, target.path);
+        const currentValue = storedValue === undefined && target.autoText ? target.originalValue : storedValue;
+        if (nextValue !== String(currentValue ?? "")) {
+          applyDraftChange(target.path, nextValue, `inline:${target.path}`, false);
+        }
+      };
+      const handleInlineKeyDown = (keyboardEvent) => {
+        if (keyboardEvent.key === "Escape") {
+          const storedValue = getContentValue(draftContent, target.path);
+          const restoredValue = String(storedValue === undefined && target.autoText ? target.originalValue : storedValue ?? "");
+          if (target.autoText) {
+            const textNodes = [...editable.childNodes].filter((node) => node.nodeType === 3);
+            if (textNodes.length) {
+              textNodes[0].nodeValue = restoredValue;
+              textNodes.slice(1).forEach((node) => { node.nodeValue = ""; });
+            } else {
+              editable.insertBefore(document.createTextNode(restoredValue), editable.firstChild);
+            }
+          } else {
+            editable.innerText = restoredValue;
+          }
+          editable.blur();
+        } else if (keyboardEvent.key === "Enter" && !target.multiline && !keyboardEvent.shiftKey) {
+          keyboardEvent.preventDefault();
+          editable.blur();
+        }
+      };
+      editable.addEventListener("blur", finish);
+      editable.addEventListener("keydown", handleInlineKeyDown);
+      setSelectedEditTarget(target);
+    };
+
+    const handlePointerDown = (event) => {
+      if (!canEditPage || event.button !== 0 || event.target.closest("[data-editor-panel]")) return;
+      const dragRoot = event.target.closest("[data-edit-drag-root='true']");
+      const candidates = document.elementsFromPoint(event.clientX, event.clientY).filter((element) => element.matches?.("[data-edit-path]"));
+      const editable = dragRoot || candidates.find((element) => element.dataset.editKind !== "style") || candidates[0];
+      if (!editable || editable.isContentEditable) return;
+      const target = targetFromElement(editable);
+      if (!target?.layoutKey) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const breakpoint = layoutBreakpoint();
+      const startOffset = layoutOffset(draftContent, target.layoutKey, breakpoint);
+      dragLayoutRef.current = {
+        element: editable,
+        target,
+        breakpoint,
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: startOffset.x,
+        originY: startOffset.y,
+        x: startOffset.x,
+        y: startOffset.y,
+        pointerId: event.pointerId,
+        moved: false,
+      };
+      editable.setPointerCapture?.(event.pointerId);
+      editable.classList.add("is-editor-dragging");
+      setSelectedEditTarget(target);
+    };
+
+    const handlePointerMove = (event) => {
+      const drag = dragLayoutRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 3) return;
+      drag.moved = true;
+      const x = Math.round(drag.originX + event.clientX - drag.startX);
+      const y = Math.round(drag.originY + event.clientY - drag.startY);
+      drag.x = x;
+      drag.y = y;
+      drag.element.style.setProperty("--layout-offset-x", `${x}px`);
+      drag.element.style.setProperty("--layout-offset-y", `${y}px`);
+      drag.element.classList.toggle("has-layout-offset", x !== 0 || y !== 0);
+    };
+
+    const handlePointerUp = (event) => {
+      const drag = dragLayoutRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      drag.element.releasePointerCapture?.(event.pointerId);
+      drag.element.classList.remove("is-editor-dragging");
+      dragLayoutRef.current = null;
+      if (!drag.moved || (drag.x === drag.originX && drag.y === drag.originY)) return;
+      applyDraftChange(
+        `layoutOffsets.${drag.target.layoutKey}.${drag.breakpoint}`,
+        { x: drag.x, y: drag.y },
+        `layout:${drag.target.layoutKey}:${drag.breakpoint}`,
+        false,
+      );
     };
 
     document.addEventListener("click", handleEditableClick, true);
+    document.addEventListener("dblclick", handleEditableDoubleClick, true);
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("pointermove", handlePointerMove, true);
+    document.addEventListener("pointerup", handlePointerUp, true);
+    document.addEventListener("pointercancel", handlePointerUp, true);
     return () => {
       document.body.classList.remove("portfolio-editing", "portfolio-editor-preview");
       document.removeEventListener("click", handleEditableClick, true);
+      document.removeEventListener("dblclick", handleEditableDoubleClick, true);
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("pointermove", handlePointerMove, true);
+      document.removeEventListener("pointerup", handlePointerUp, true);
+      document.removeEventListener("pointercancel", handlePointerUp, true);
     };
-  }, [editorMode, isEditorOpen]);
+  }, [applyDraftChange, draftContent, editorMode, isEditorOpen, isEditorUnlocked, session]);
+
+  useLayoutEffect(() => {
+    applyEditableLayoutOffsets(renderedContent);
+  }, [detailId, renderedContent]);
+
+  useEffect(() => {
+    const styleId = "portfolio-custom-fonts";
+    let styleElement = document.getElementById(styleId);
+    if (!styleElement) {
+      styleElement = document.createElement("style");
+      styleElement.id = styleId;
+      document.head.appendChild(styleElement);
+    }
+    styleElement.textContent = (renderedContent.customFonts || [])
+      .filter((font) => font?.family && font?.url)
+      .map((font) => `@font-face{font-family:${JSON.stringify(font.family)};src:url(${JSON.stringify(font.url)});font-display:swap;}`)
+      .join("\n");
+  }, [renderedContent.customFonts]);
+
+  useEffect(() => {
+    const handleResize = () => applyEditableLayoutOffsets(renderedContent);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [renderedContent]);
 
   useEffect(() => {
     document.querySelectorAll(".is-editor-selected").forEach((element) => element.classList.remove("is-editor-selected"));
-    if (!isEditorOpen || editorMode !== "edit" || !selectedEditTarget?.path) return undefined;
-    document.querySelectorAll("[data-edit-path]").forEach((element) => {
-      if (element.dataset.editPath === selectedEditTarget.path) element.classList.add("is-editor-selected");
+    if (!session || !isEditorUnlocked || !isEditorOpen || editorMode !== "edit" || !selectedEditTarget?.layoutKey) return undefined;
+    document.querySelectorAll("[data-edit-layout-key]").forEach((element) => {
+      if (element.dataset.editLayoutKey === selectedEditTarget.layoutKey) element.classList.add("is-editor-selected");
     });
     return () => document.querySelectorAll(".is-editor-selected").forEach((element) => element.classList.remove("is-editor-selected"));
-  }, [editorMode, isEditorOpen, selectedEditTarget]);
+  }, [editorMode, isEditorOpen, isEditorUnlocked, selectedEditTarget, session]);
 
   useEffect(() => () => {
     previewObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
@@ -1917,12 +2205,16 @@ function App() {
   const handleSignIn = async (email, password) => {
     const currentSession = await signInAdmin(email, password);
     setSession(currentSession);
+    setIsEditorUnlocked(true);
     setCloudStatus("online");
   };
 
   const handleSignOut = async () => {
     await signOutAdmin();
     setSession(null);
+    setIsEditorUnlocked(false);
+    setIsEditorOpen(false);
+    setSelectedEditTarget(null);
   };
 
   const handleUpload = async (dataUrl, area) => {
@@ -2021,6 +2313,30 @@ function App() {
     }
   };
 
+  const handleEditorFontUpload = async (file, target) => {
+    if (!session) throw new Error("请先登录管理员账号。");
+    if (!file || !target?.layoutKey) return;
+    if (file.size > 8 * 1024 * 1024) throw new Error("字体文件请小于 8MB。");
+    const family = file.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9\u4e00-\u9fff_-]+/g, " ").trim() || `Custom Font ${Date.now()}`;
+    const localUrl = URL.createObjectURL(file);
+    previewObjectUrlsRef.current.add(localUrl);
+    const localFont = new FontFace(family, `url(${localUrl})`);
+    await localFont.load();
+    document.fonts.add(localFont);
+    applyDraftChange(`styleOverrides.${target.layoutKey}`, {
+      ...(draftContent.styleOverrides?.[target.layoutKey] || {}),
+      fontFamily: family,
+    }, `font:${target.layoutKey}`, false);
+    try {
+      const publicUrl = await uploadPortfolioFile(file, "fonts");
+      const fonts = (draftContent.customFonts || []).filter((font) => font.family !== family);
+      applyDraftChange("customFonts", [...fonts, { family, url: publicUrl, fileName: file.name }], `font-upload:${family}`, false);
+      return { family, url: publicUrl };
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const saveContent = async (nextContent) => {
     const merged = mergeContent(nextContent);
 
@@ -2102,8 +2418,13 @@ function App() {
   const editorProps = {
     isOpen: isEditorOpen,
     onOpen: openEditor,
-    onClose: () => setIsEditorOpen(false),
+    onClose: () => {
+      setIsEditorOpen(false);
+      setIsEditorUnlocked(false);
+      setSelectedEditTarget(null);
+    },
     session,
+    isUnlocked: isEditorUnlocked,
     cloudStatus,
     onSignIn: handleSignIn,
     onSignOut: handleSignOut,
@@ -2124,6 +2445,7 @@ function App() {
     onRedo: redoDraft,
     onChange: applyDraftChange,
     onUploadImage: handleEditorImageUpload,
+    onUploadFont: handleEditorFontUpload,
     uploadStates,
     onPublish: publishDraft,
     onDiscardChanges: discardDraftChanges,
@@ -2133,8 +2455,8 @@ function App() {
     return (
       <>
         <NavigationTransition onNavigate={handleRouteNavigation} />
-        <TargetCursor />
-        <DetailPage detailId={detailId} content={renderedContent} onEdit={openEditor} />
+        <TargetCursor cursorColor={isLightTheme ? "#111318" : "#f1efe4"} cursorColorOnTarget="#b6d600" />
+        <DetailPage detailId={detailId} content={renderedContent} onEdit={openEditor} themeMode={isLightTheme ? "light" : "dark"} />
         <ContentEditorV2 {...editorProps} />
       </>
     );
@@ -2143,41 +2465,40 @@ function App() {
   return (
     <>
       <NavigationTransition onNavigate={handleRouteNavigation} />
-      <TargetCursor />
-      <PortfolioSidebar navigation={renderedContent.navigation} />
-      <main ref={pageRef} className="min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]">
-      <section id="top" data-hero className="relative min-h-[100dvh] overflow-hidden bg-[#08090b]">
+      <TargetCursor cursorColor={isLightTheme ? "#111318" : "#f1efe4"} cursorColorOnTarget="#b6d600" />
+      <Navigation
+        brand={renderedContent.brand}
+        logoImage={renderedContent.logoImage}
+        navigation={renderedContent.navigation}
+        isOpen={isMenuOpen}
+        onToggle={() => setIsMenuOpen((current) => !current)}
+        onClose={() => setIsMenuOpen(false)}
+        onEdit={openEditor}
+      />
+      <main ref={pageRef} className={"min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]" + (isLightTheme ? " portfolio-light-mode" : "")}>
+      <section id="top" data-hero className="portfolio-hero relative min-h-[100dvh] overflow-hidden bg-[#08090b]">
         <HeroSceneBackground content={renderedContent} activeScene={activeHeroScene} />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,6,8,0.92)_0%,rgba(5,6,8,0.42)_52%,rgba(5,6,8,0.66)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.2)_0%,rgba(5,6,8,0.12)_40%,rgba(5,6,8,0.94)_100%)]" />
+        <div className="portfolio-hero__tone portfolio-hero__tone--horizontal absolute inset-0 bg-[linear-gradient(90deg,rgba(5,6,8,0.92)_0%,rgba(5,6,8,0.42)_52%,rgba(5,6,8,0.66)_100%)]" />
+        <div className="portfolio-hero__tone portfolio-hero__tone--vertical absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.2)_0%,rgba(5,6,8,0.12)_40%,rgba(5,6,8,0.94)_100%)]" />
+        <div className="hero-cinematic-vignette absolute inset-0" aria-hidden="true" />
         <div className="noise-overlay absolute inset-0 opacity-35" aria-hidden="true" />
         <div className="hero-grid absolute inset-0" aria-hidden="true" />
-
-        <Navigation
-          brand={renderedContent.brand}
-          logoImage={renderedContent.logoImage}
-          navigation={renderedContent.navigation}
-          isOpen={isMenuOpen}
-          onToggle={() => setIsMenuOpen((current) => !current)}
-          onClose={() => setIsMenuOpen(false)}
-          onEdit={openEditor}
-        />
 
         <div className="portfolio-layout relative z-10 mx-auto flex min-h-[100dvh] max-w-[1700px] flex-col justify-end px-5 pb-9 pt-32 sm:px-8 sm:pb-12 lg:px-12 lg:pb-14">
           <div className="max-w-[1500px]">
             <div data-hero-meta className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-7">
-              <span className="text-[10px] font-bold uppercase text-[#e5ff48]" data-edit-path="eyebrow" data-edit-kind="text" data-edit-label="首页身份标签" data-edit-section="首页">{renderedContent.eyebrow}</span>
-              <span className="hidden h-px w-16 bg-white/28 sm:block" />
-              <span className="text-[10px] font-bold uppercase text-white/46">Shanghai · Available 2026</span>
+              <span className="portfolio-hero__eyebrow text-[10px] font-bold uppercase text-[#e5ff48]" data-edit-path="eyebrow" data-edit-kind="text" data-edit-label="首页身份标签" data-edit-section="首页">{renderedContent.eyebrow}</span>
+              <span className="portfolio-hero__meta-line hidden h-px w-16 bg-white/28 sm:block" />
+              <span className="portfolio-hero__meta text-[10px] font-bold uppercase text-white/46">Shanghai · Available 2026</span>
             </div>
 
-            <h1 className="display-editorial mt-7 max-w-[13ch] text-[56px] leading-[1.02] text-[#f1efe4] sm:text-[82px] sm:leading-[0.9] lg:text-[118px] lg:leading-[0.84] xl:text-[150px] 2xl:text-[164px]" data-edit-path="headline" data-edit-kind="text" data-edit-label="首页主标题" data-edit-section="首页">
+            <h1 className="portfolio-hero__title display-editorial mt-7 max-w-[13ch] text-[56px] leading-[1.02] text-[#f1efe4] sm:text-[82px] sm:leading-[0.9] lg:text-[118px] lg:leading-[0.84] xl:text-[150px] 2xl:text-[164px]" data-edit-path="headline" data-edit-kind="text" data-edit-label="首页主标题" data-edit-section="首页">
               {renderedContent.headline.trim().split(/\s+/).map((word, index, words) => (
                 <span key={`${word}-${index}`}>
                   <span className="hero-word-mask">
                     <span data-hero-word className="hero-word">
                       {word}
-                      {index === words.length - 1 && <span data-hero-period className="inline-block text-[#e5ff48]">.</span>}
+                      {index === words.length - 1 && <span data-hero-period className="portfolio-hero__period inline-block text-[#e5ff48]">.</span>}
                     </span>
                   </span>
                   {index < words.length - 1 ? " " : ""}
@@ -2186,9 +2507,9 @@ function App() {
             </h1>
 
             <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_0.72fr] lg:items-end lg:gap-20">
-              <p data-hero-copy className="max-w-2xl text-sm leading-7 text-white/58 sm:text-base sm:leading-8" data-edit-path="description" data-edit-kind="text" data-edit-label="首页简介" data-edit-section="首页" data-edit-multiline="true">{renderedContent.description}</p>
+              <p data-hero-copy className="portfolio-hero__description max-w-2xl text-sm leading-7 text-white/58 sm:text-base sm:leading-8" data-edit-path="description" data-edit-kind="text" data-edit-label="首页简介" data-edit-section="首页" data-edit-multiline="true">{renderedContent.description}</p>
               <div data-hero-cta className="flex flex-wrap gap-3 lg:justify-self-end">
-                <a className="cursor-target group inline-flex min-h-14 items-center gap-5 rounded-full bg-[#e5ff48] px-6 text-[11px] font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-1" href="#projects">
+                <a className="portfolio-hero__cta portfolio-hero__cta--primary cursor-target group inline-flex min-h-14 items-center gap-5 rounded-full bg-[#e5ff48] px-6 text-[11px] font-bold uppercase text-[#090a0c] transition-transform hover:-translate-y-1" href="#projects">
                   <span data-edit-path="ctaLabel" data-edit-kind="text" data-edit-label="首页按钮文字" data-edit-section="首页">{renderedContent.ctaLabel}</span>
                   <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} />
                 </a>
@@ -2198,7 +2519,7 @@ function App() {
               </div>
             </div>
 
-            <div data-hero-foot className="mt-10 grid gap-5 border-t border-white/16 pt-6 text-[10px] font-bold uppercase text-white/38 sm:grid-cols-3 lg:mt-14">
+            <div data-hero-foot className="portfolio-hero__foot mt-10 grid gap-5 border-t border-white/16 pt-6 text-[10px] font-bold uppercase text-white/38 sm:grid-cols-3 lg:mt-14">
               <span data-edit-path="card.year" data-edit-kind="text" data-edit-label="首页年份" data-edit-section="首页">{renderedContent.card.year}</span>
               <span className="sm:text-center" data-edit-path="about.role" data-edit-kind="text" data-edit-label="身份 / 职位" data-edit-section="关于我">{renderedContent.about.role}</span>
               {renderedContent.mediaMode === "video" && !renderedContent.videoUrl?.includes(".m3u8") ? (
@@ -2227,11 +2548,17 @@ function App() {
         </div>
       </section>
 
+      <LatestCasesSection content={renderedContent.projects} />
       <ExperienceSection content={renderedContent.about} size={renderedContent.sectionSizes.about} />
       <CareerSection content={renderedContent.career} size={renderedContent.sectionSizes.career} />
-      <ProjectsSection content={renderedContent.projects} size={renderedContent.sectionSizes.projects} />
+      {isShowcasePreview ? (
+        <ProjectsShowcasePreview content={renderedContent.projects} />
+      ) : (
+        <ProjectsSection content={renderedContent.projects} size={renderedContent.sectionSizes.projects} />
+      )}
       <StrengthsSection content={renderedContent.blog} capabilities={renderedContent.resume} size={Math.max(renderedContent.sectionSizes.blog, renderedContent.sectionSizes.resume)} />
-      <ContactSection content={renderedContent.about} />
+      {isShowcasePreview && <VisualGallerySection content={renderedContent.projects} />}
+      <ContactSection content={renderedContent.about} projects={renderedContent.projects} />
       <ContentEditorV2 {...editorProps} />
       </main>
     </>

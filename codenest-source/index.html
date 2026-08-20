@@ -13,7 +13,14 @@
       href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=Inter:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@700&display=swap"
       rel="stylesheet"
     />
-    <meta name="theme-color" content="#08090b" />
+    <meta name="theme-color" content="#f4f5f1" />
+    <script>
+      if (new URLSearchParams(window.location.search).get("theme") === "dark") {
+        document.querySelector('meta[name="theme-color"]').content = "#08090b";
+      } else {
+        document.documentElement.classList.add("portfolio-light-document");
+      }
+    </script>
     <title>Anthony | Visual, AI & Brand Designer</title>
   </head>
   <body>

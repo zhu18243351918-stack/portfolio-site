@@ -31,6 +31,10 @@ export const DEFAULT_CONTENT = {
     about: 58,
     career: 135,
   },
+  layoutOffsets: {},
+  styleOverrides: {},
+  textOverrides: {},
+  customFonts: [],
   career: {
     eyebrow: "Career / 2020-Now",
     title: "Selected career experience.",
@@ -98,6 +102,12 @@ export const DEFAULT_CONTENT = {
   projects: {
     eyebrow: "Selected Work / 01-06",
     title: "Selected works.",
+    subtitle: "精选作品",
+    latestTitleLead: "SELECTED",
+    latestTitleAccent: "WORKS",
+    latestDescription: "最近完成的品牌、电商与全渠道视觉项目。点击案例，查看完整的设计过程与视觉成果。",
+    archiveTitle: "More selected work.",
+    archiveDescription: "AI 创意、IP 角色与视觉规范持续循环展示；悬停作品可暂停移动并进入完整案例。",
     description:
       "以两排 3:4 作品卡片浏览品牌升级、电商视觉、全渠道系统、AI 创意与 IP 角色项目。点击任意卡片可进入完整案例与图片轮播。",
     catalogItems: [
@@ -171,6 +181,36 @@ export const DEFAULT_CONTENT = {
           "./portfolio/fragment-topsports.webp",
           "./portfolio/project-01-03.webp",
         ],
+      },
+    ],
+    mosaicItems: [
+      {
+        index: "01",
+        category: "E-COMMERCE / BEAUTY",
+        title: "敷尔佳电商视觉",
+        description: "核心品类、电商内容与多渠道视觉表达。",
+        image: "./portfolio/project-02-02.webp",
+      },
+      {
+        index: "02",
+        category: "BRAND SYSTEM / BEAUTY",
+        title: "福瑞达品牌体系",
+        description: "品牌策略、新零售终端与视觉资产系统。",
+        image: "./portfolio/project-03-02.webp",
+      },
+      {
+        index: "03",
+        category: "RETAIL / OMNICHANNEL",
+        title: "滔搏全渠道升级",
+        description: "连接数字平台、营销活动与全国零售终端。",
+        image: "./portfolio/project-01-03.webp",
+      },
+      {
+        index: "04",
+        category: "AI / KEY VISUAL",
+        title: "AI 创意视觉",
+        description: "以 AI 辅助概念发散、场景延展和高频内容生产。",
+        image: "./portfolio/project-02-03.webp",
       },
     ],
     items: [
@@ -346,6 +386,10 @@ export const DEFAULT_CONTENT = {
   about: {
     eyebrow: "About Anthony",
     title: "I build visual systems that turn brand character into business momentum.",
+    contactEyebrow: "Available for collaboration → Build better brands",
+    contactTitleLine1: "Visuals designed for",
+    contactTitleLine2: "speed, clarity, and",
+    contactTitleAccent: "conversion.",
     name: "朱宇航 / Anthony",
     role: "Visual Designer · AI Designer · Brand Designer",
     bio:

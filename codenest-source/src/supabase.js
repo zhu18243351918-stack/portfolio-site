@@ -83,3 +83,17 @@ export async function uploadPortfolioImage(source, area = "content") {
   const { data } = supabase.storage.from(ASSET_BUCKET).getPublicUrl(filename);
   return data.publicUrl;
 }
+
+export async function uploadPortfolioFile(file, area = "files") {
+  const sourceName = String(file?.name || "asset.bin");
+  const extension = sourceName.includes(".") ? sourceName.split(".").pop().toLowerCase().replace(/[^a-z0-9]/g, "") : "bin";
+  const filename = `${area}/${Date.now()}-${crypto.randomUUID()}.${extension || "bin"}`;
+  const { error } = await supabase.storage.from(ASSET_BUCKET).upload(filename, file, {
+    cacheControl: "31536000",
+    contentType: file.type || "application/octet-stream",
+    upsert: false,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from(ASSET_BUCKET).getPublicUrl(filename);
+  return data.publicUrl;
+}

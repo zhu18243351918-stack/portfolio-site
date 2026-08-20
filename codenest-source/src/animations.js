@@ -66,7 +66,7 @@ function createHeroOpening(root, playOpening) {
   if (!opening) {
     rememberOpening();
     gsap.set(heroMedia, { scale: 1.065, transformOrigin: "50% 50%" });
-    gsap.set(heroNav, { autoAlpha: 0, y: -22 });
+    if (heroNav) gsap.set(heroNav, { autoAlpha: 0, y: -22 });
     gsap.set(heroMeta, { autoAlpha: 0, x: -38 });
     gsap.set(heroWords, {
       yPercent: 112,
@@ -80,7 +80,7 @@ function createHeroOpening(root, playOpening) {
 
     gsap.timeline({ defaults: { ease: PREMIUM_EASE } })
       .to(heroMedia, { scale: 1, duration: 2.1, ease: "power3.out" }, 0)
-      .to(heroNav, { autoAlpha: 1, y: 0, duration: 0.95 }, 0.12)
+      .to(heroNav || [], { autoAlpha: 1, y: 0, duration: 0.95 }, 0.12)
       .to(heroMeta, { autoAlpha: 1, x: 0, duration: 0.82 }, 0.2)
       .to(heroWords, { yPercent: 0, scaleY: 1, scaleX: 1, duration: 1.18, stagger: 0.09, ease: "power4.out" }, 0.24)
       .to(heroPeriod, { autoAlpha: 1, scale: 1, duration: 0.62, ease: "power4.out" }, 0.9)
@@ -97,7 +97,7 @@ function createHeroOpening(root, playOpening) {
   gsap.set(openingMark, { autoAlpha: 0, y: 24 });
   gsap.set(openingRule, { scaleX: 0, transformOrigin: "0% 50%" });
   gsap.set(heroMedia, { scale: 1.12, transformOrigin: "50% 50%" });
-  gsap.set(heroNav, { autoAlpha: 0, y: -28 });
+  if (heroNav) gsap.set(heroNav, { autoAlpha: 0, y: -28 });
   gsap.set(heroMeta, { autoAlpha: 0, x: -52 });
   gsap.set(heroWords, {
     yPercent: 128,
@@ -125,7 +125,7 @@ function createHeroOpening(root, playOpening) {
     .to(openingRule, { scaleX: 0, transformOrigin: "100% 50%", duration: 0.5, ease: "power3.in" }, 0.9)
     .to(opening, { clipPath: "inset(0% 0% 100% 0%)", duration: 1.18, ease: "power4.inOut" }, 1.02)
     .to(heroMedia, { scale: 1, duration: 2.35, ease: "power3.out" }, 0.94)
-    .to(heroNav, { autoAlpha: 1, y: 0, duration: 1.05 }, 1.12)
+    .to(heroNav || [], { autoAlpha: 1, y: 0, duration: 1.05 }, 1.12)
     .to(heroMeta, { autoAlpha: 1, x: 0, duration: 0.9 }, 1.16)
     .to(
       heroWords,
@@ -161,7 +161,7 @@ function createSectionMotion(root, isMobile) {
     const timeline = gsap.timeline({
       scrollTrigger: {
         trigger,
-        start: isMobile ? "top 88%" : "top 76%",
+        start: isMobile ? "top 92%" : "top 88%",
         once: true,
       },
       defaults: { ease: PREMIUM_EASE },
@@ -174,8 +174,8 @@ function createSectionMotion(root, isMobile) {
     if (heading) {
       timeline.fromTo(
         heading,
-        { yPercent: 116, scaleY: 0.62, transformOrigin: "50% 100%" },
-        { yPercent: 0, scaleY: 1, duration: isMobile ? 1.05 : 1.38, ease: "power4.out" },
+        { yPercent: 72, scaleY: 0.74, transformOrigin: "50% 100%" },
+        { yPercent: 0, scaleY: 1, duration: isMobile ? 0.9 : 1.08, ease: "power4.out" },
         0.08,
       );
     }
@@ -183,9 +183,9 @@ function createSectionMotion(root, isMobile) {
     if (copy.length) {
       timeline.fromTo(
         copy,
-        { autoAlpha: 0, y: 44 },
-        { autoAlpha: 1, y: 0, duration: 0.9, stagger: 0.08 },
-        0.42,
+        { autoAlpha: 0, y: 30 },
+        { autoAlpha: 1, y: 0, duration: 0.76, stagger: 0.07 },
+        0.3,
       );
     }
 
@@ -215,7 +215,7 @@ function createSectionMotion(root, isMobile) {
     const timeline = gsap.timeline({
       scrollTrigger: {
         trigger: group,
-        start: isMobile ? "top 90%" : "top 82%",
+        start: isMobile ? "top 94%" : "top 90%",
         once: true,
       },
     });
@@ -223,15 +223,15 @@ function createSectionMotion(root, isMobile) {
     timeline.fromTo(
       cards,
       {
-        y: isMobile ? 64 : 112,
-        clipPath: "inset(0% 0% 24% 0%)",
+        y: isMobile ? 44 : 72,
+        clipPath: "inset(0% 0% 16% 0%)",
         willChange: "transform, clip-path",
       },
       {
         y: 0,
         clipPath: "inset(0% 0% 0% 0%)",
-        duration: isMobile ? 1 : 1.28,
-        stagger: isMobile ? 0.09 : 0.16,
+        duration: isMobile ? 0.88 : 1.08,
+        stagger: isMobile ? 0.07 : 0.12,
         ease: "power4.out",
         clearProps: "clipPath,willChange",
       },
@@ -250,7 +250,7 @@ function createSectionMotion(root, isMobile) {
     const timeline = gsap.timeline({
       scrollTrigger: {
         trigger: card,
-        start: isMobile ? "top 90%" : "top 84%",
+        start: isMobile ? "top 94%" : "top 90%",
         once: true,
       },
     });
@@ -258,14 +258,14 @@ function createSectionMotion(root, isMobile) {
     timeline.fromTo(
       card,
       {
-        y: isMobile ? 70 : 126,
-        clipPath: "inset(0% 0% 22% 0%)",
+        y: isMobile ? 48 : 82,
+        clipPath: "inset(0% 0% 16% 0%)",
         willChange: "transform, clip-path",
       },
       {
         y: 0,
         clipPath: "inset(0% 0% 0% 0%)",
-        duration: isMobile ? 1.08 : 1.42,
+        duration: isMobile ? 0.92 : 1.14,
         ease: "power4.out",
         clearProps: "clipPath,willChange",
       },

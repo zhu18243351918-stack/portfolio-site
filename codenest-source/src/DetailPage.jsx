@@ -10,10 +10,9 @@ function resolveDetail(detailId, content) {
     const item = content.projects.catalogItems?.[index];
     if (!item) return null;
     const basePath = `projects.catalogItems.${index}`;
-    const galleryEntries = [
-      { image: item.image, path: `${basePath}.image` },
-      ...(item.gallery || []).map((image, imageIndex) => ({ image, path: `${basePath}.gallery.${imageIndex}` })),
-    ].filter((entry, entryIndex, entries) => entry.image && entries.findIndex((candidate) => candidate.image === entry.image) === entryIndex);
+    const galleryEntries = item.gallery?.length
+      ? item.gallery.map((image, imageIndex) => ({ image, path: `${basePath}.gallery.${imageIndex}` }))
+      : [{ image: item.image, path: `${basePath}.image` }];
     return {
       type: "Selected Work",
       marker: item.index,
@@ -124,7 +123,8 @@ function DetailLogo({ brand, logoImage }) {
   );
 }
 
-export default function DetailPage({ detailId, content, onEdit }) {
+export default function DetailPage({ detailId, content, onEdit, themeMode = "dark" }) {
+  const isLightTheme = themeMode === "light";
   const detail = useMemo(() => resolveDetail(detailId, content), [content, detailId]);
   const trackRef = useRef(null);
   const slideRefs = useRef([]);
@@ -170,8 +170,8 @@ export default function DetailPage({ detailId, content, onEdit }) {
 
   if (!detail) {
     return (
-      <main className="grid min-h-[100dvh] place-items-center bg-[#08090b] px-5 text-[#efede1]">
-        <div className="w-full max-w-3xl border border-white/14 bg-[#0d0f12] p-8 sm:p-12">
+      <main className={"portfolio-detail portfolio-detail--missing grid min-h-[100dvh] place-items-center bg-[#08090b] px-5 text-[#efede1]" + (isLightTheme ? " portfolio-light-mode" : "")}>
+        <div className="portfolio-detail__missing-card w-full max-w-3xl border border-white/14 bg-[#0d0f12] p-8 sm:p-12">
           <p className="text-[10px] font-bold uppercase text-[#e5ff48]">Gallery unavailable</p>
           <h1 className="display-editorial mt-5 text-4xl leading-[0.94] sm:text-6xl">This secondary page does not exist.</h1>
           <a className="cursor-target mt-9 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#e5ff48] px-6 text-sm font-bold text-[#090a0c]" href={homeHref} onClick={handleTransitionLink}>
@@ -185,13 +185,13 @@ export default function DetailPage({ detailId, content, onEdit }) {
   const activeBackground = detail.gallery[activeIndex] || detail.gallery[0];
 
   return (
-    <main className="relative min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]">
+    <main className={"portfolio-detail relative min-h-[100dvh] overflow-x-clip bg-[#08090b] text-[#efede1]" + (isLightTheme ? " portfolio-light-mode" : "")}>
       <div className="pointer-events-none fixed inset-0 opacity-22" aria-hidden="true">
         <img className="h-full w-full scale-110 object-cover grayscale blur-[32px]" src={activeBackground} alt="" />
-        <div className="absolute inset-0 bg-[#08090b]/88" />
+        <div className="portfolio-detail__ambient absolute inset-0 bg-[#08090b]/88" />
       </div>
 
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-white/12 bg-[#08090b]/70 backdrop-blur-xl">
+      <header className="portfolio-detail__header fixed inset-x-0 top-0 z-40 border-b border-white/12 bg-[#08090b]/70 backdrop-blur-xl">
         <div className="mx-auto flex h-[84px] max-w-[1700px] items-center justify-between px-5 sm:px-8 lg:px-12">
           <a className="cursor-target" href={homeHref} aria-label="Return to portfolio" onClick={handleTransitionLink}>
             <DetailLogo brand={content.brand} logoImage={content.logoImage} />
@@ -211,7 +211,7 @@ export default function DetailPage({ detailId, content, onEdit }) {
       <section className="relative z-10 px-0 pb-12 pt-[84px] sm:px-8 sm:pb-16 lg:px-12 lg:pb-24 lg:pt-28">
         <div className="mx-auto max-w-[1700px]">
           <div
-            className="specular-frame relative aspect-video overflow-hidden border-y border-white/14 bg-[#0d0f12] sm:rounded-[6px] sm:border"
+            className="portfolio-detail__gallery specular-frame relative aspect-video overflow-hidden border-y border-white/14 bg-[#0d0f12] sm:rounded-[6px] sm:border"
             onPointerMove={steerSpecularEdge}
             onPointerLeave={resetSpecularEdge}
           >
@@ -268,7 +268,7 @@ export default function DetailPage({ detailId, content, onEdit }) {
             </div>
           </div>
 
-          <div className="grid border-b border-white/14 lg:grid-cols-[1.18fr_0.82fr]">
+          <div className="portfolio-detail__information grid border-b border-white/14 lg:grid-cols-[1.18fr_0.82fr]">
             <div className="border-b border-white/14 px-5 py-10 sm:px-8 sm:py-14 lg:border-b-0 lg:border-r lg:px-12 lg:py-[72px]">
               <p className="text-[10px] font-bold uppercase text-[#e5ff48]">{detail.type} / {detail.marker}</p>
               <h1 className="display-editorial mt-5 max-w-[15ch] text-4xl leading-[0.92] sm:text-6xl lg:text-[78px]" data-edit-path={detail.titlePath} data-edit-kind="text" data-edit-label="二级页标题" data-edit-section="二级页">{detail.title}</h1>
